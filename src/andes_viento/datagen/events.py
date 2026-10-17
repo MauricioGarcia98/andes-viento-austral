@@ -278,6 +278,14 @@ def downtime_events(cfg: ProjectConfig, end: date) -> list[dict]:
                         if d <= end:
                             comp = yr.choices(list(R.COMPONENTS), weights=[0.4, 0.3, 0.3])[0]
                             per_unit.append(_major(cfg, u, park, comp, d, yr, wx))
+                # ------------------------------------- lote defectuoso de multiplicadoras HTW (2024-2025)
+                lot = R.STORY["htw_gearbox_lot"]
+                if u.manufacturer == lot["manufacturer"] and lot["from"] <= m0 <= lot["to"]:
+                    lr = prng(cfg.seed, "htw-lot", u.asset_id, m0)
+                    if lr.random() < lot["rate_year"] / 12:
+                        d = m0 + timedelta(days=lr.randint(0, dim - 1))
+                        if d <= end:
+                            per_unit.append(_major(cfg, u, park, "GEARBOX", d, lr, wx))
             else:
                 # ---------------------------------------------------- inversores
                 if rng.random() < 0.06:

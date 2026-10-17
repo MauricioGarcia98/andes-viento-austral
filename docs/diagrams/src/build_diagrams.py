@@ -85,7 +85,7 @@ def proceso_completo() -> Scene:
     s.step = 7
     s.line([(60, 660), (2340, 660)], color="#adb5bd", width=2, dashed=True)
     areas = [
-        (ORANGE, "Operación de parques", "¿por qué Cañadón León\ngeneró 18 % menos en julio?"),
+        (ORANGE, "Operación de parques", "¿por qué Cañadón León\ngeneró 15 % menos en julio?"),
         (RED, "Mantenimiento", "¿qué multiplicadora\nse va a romper?"),
         (BLUE, "Comercial PPA", "¿llegamos al volumen\ndel data center?"),
         (TEAL, "Finanzas", "¿en qué parque\nponemos baterías?"),
@@ -522,7 +522,7 @@ def capa_genie() -> Scene:
               ("metric views (7)", "métricas oficiales con sinónimos: 'recorte', 'multa del fabricante'", VIOLET),
               ("funciones de UC (7)", "trusted assets: fn_explicar_desvio, fn_ranking_baterias...", TEAL),
               ("Genie Agents (4)", "instrucciones cortas · ejemplos SQL · 86 benchmarks", GREEN),
-              ("Agent mode / Genie One", "¿por qué Cañadón León generó 18 % menos en julio?", ORANGE)]
+              ("Agent mode / Genie One", "¿por qué Cañadón León generó 15 % menos en julio?", ORANGE)]
     for i, (t, sub, color) in enumerate(layers):
         s.step = i + 1
         w = 1900 - i * 230

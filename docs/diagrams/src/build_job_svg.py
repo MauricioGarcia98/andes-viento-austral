@@ -41,7 +41,7 @@ LOGS = [
     "relojes, husos, kW/MW, clavados · SCD2 activos",
     "dim_turbine: cambios de multiplicadora (SCD2)",
     "potencial = generado + red + fallas + hielo",
-    "LEO jul-2025: -18 % vs presupuesto, explicado",
+    "LEO jul-2025: -15,4 % vs presupuesto, explicado",
     "10/10 invariantes OK → Genie listo",
 ]
 ENTITIES = ["assets", "contracts", "spot", "dispatch", "weather", "scada", "inverter", "orders"]

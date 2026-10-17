@@ -149,15 +149,18 @@ TEMP_DIURNAL = {"PATAGONIA": 5.0, "NOA": 10.0}   # día-noche (en la Puna la amp
 # La historia que tiene que aparecer en los datos (y que Genie debe encontrar)
 # =============================================================================
 STORY = {
-    # Agent mode: "¿por qué Cañadón León generó 18 % menos en julio 2025?"
+    # Agent mode: "¿por qué Cañadón León generó 15 % menos en julio 2025? (guionado para ~18 %; a SF 0,1 medido −15,4 %)"
     "leo_july_2025": {
         "park": "LEO",
         "cold_wave": (date(2025, 7, 3), date(2025, 7, 5)),       # ola polar: hielo en palas
         "grid_maintenance": (date(2025, 7, 10), date(2025, 7, 20)),  # ET Santa Cruz Norte: tope 60 %
-        "grid_limit_fraction": 0.60,
+        "grid_limit_fraction": 0.50,
         "gearbox_failure": date(2025, 7, 26),                   # multiplicadora, RN40 con nieve: 21 días
         "wind_anomaly": 0.98,                                   # julio un 2 % menos ventoso
     },
+    # Lote defectuoso de multiplicadoras de Hanse Turbinen Werke: en 2024-2025 las HTW rompen
+    # multiplicadoras mucho más que lo normal (caso 5: reclamo de garantía al fabricante).
+    "htw_gearbox_lot": {"manufacturer": "HTW", "from": date(2024, 3, 1), "to": date(2025, 12, 31), "rate_year": 0.60},
     # Saturación de la línea 500 kV Patagonia: el curtailment crece año a año.
     "curtailment_growth": {2023: 0.55, 2024: 0.80, 2025: 1.00, 2026: 1.10},
     # Devaluación del 13-dic-2023.
@@ -252,7 +255,7 @@ CONTRACTS = [
              64.5, 0.35, 34.0, 0.08, ("PIC", "DES")),
     Contract("PPA-2023-007", "Data Center Austral S.R.L.", "Tecnología", "30-71999000-4", "Nicolás Brandán",
              "nbrandan@dcaustral.com.ar", "+54 11 5263-8800", date(2023, 3, 1), date(2038, 2, 28),
-             71.0, 0.62, 55.0, 0.03, ("SJU", "LEO")),
+             71.0, 0.70, 55.0, 0.03, ("SJU", "LEO")),
     Contract("PPA-2025-008", "Papelera Mesopotámica S.A.", "Papel", "30-72100200-8", "Ana Benítez",
              "abenitez@papelerameso.com.ar", "+54 343 420-1188", date(2025, 3, 1), date(2035, 2, 28),
              62.0, 0.25, 30.0, 0.07, ("FIA", "PIC")),
