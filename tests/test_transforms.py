@@ -96,3 +96,19 @@ def test_inverter_mw_bug(spark):
     row = T.clean_inverter(df, tags).first()
     assert row.ac_power_kw == pytest.approx(2450.0) and row.unit_converted
     assert row.ts_utc == datetime(2024, 2, 15, 16, 0)
+
+
+def test_split_statements_respects_strings_and_dollar_blocks():
+    from andes_viento.gold.marts import split_statements
+
+    sql = """-- comentario; con punto y coma
+COMMENT ON TABLE t IS 'uno; dos \\' tres';
+CREATE VIEW v AS $$
+a: b; c
+$$;
+SELECT `x;y` FROM t -- fin; de línea
+"""
+    stmts = split_statements(sql)
+    assert len(stmts) == 3
+    assert stmts[0].endswith("'uno; dos \\' tres'")
+    assert "a: b; c" in stmts[1]

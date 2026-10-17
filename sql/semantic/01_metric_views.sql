@@ -5,7 +5,8 @@
 --   SELECT `Parque`, MEASURE(`Energía generada (MWh)`) FROM gold.mv_generacion GROUP BY ALL
 -- Decisión del Analytics Engineer: nombres en español "de negocio" (como los dice la gente),
 -- con comentarios y sinónimos para que Genie entienda "curtailment", "recorte", "limitación".
--- Nota técnica: dentro de $$...$$ no puede haber punto y coma (el runner separa por ';').
+-- Ojo (error real, ver bitácora): el nombre de un join no puede coincidir con el de una dimensión
+-- ("parque" vs. "Parque"): los nombres no distinguen mayúsculas y el join queda tapado.
 -- =============================================================================
 
 CREATE OR REPLACE VIEW ${gold}.mv_generacion
@@ -81,14 +82,14 @@ version: 1.1
 comment: "Energía perdida por curtailment y su valor, por parque eólico y hora"
 source: ${gold}.fact_curtailment_hourly
 joins:
-  - name: parque
+  - name: park
     source: ${gold}.dim_park
-    on: source.park_key = parque.park_key
+    on: source.park_key = park.park_key
 dimensions:
   - name: Parque
-    expr: parque.park_name
+    expr: park.park_name
   - name: Provincia
-    expr: parque.province
+    expr: park.province
   - name: Fecha
     expr: reading_date
   - name: Mes
@@ -125,14 +126,14 @@ version: 1.1
 comment: "Órdenes de trabajo del CMMS"
 source: ${gold}.fact_maintenance_order
 joins:
-  - name: parque
+  - name: park
     source: ${gold}.dim_park
-    on: source.park_key = parque.park_key
+    on: source.park_key = park.park_key
 dimensions:
   - name: Parque
-    expr: parque.park_name
+    expr: park.park_name
   - name: Tecnología
-    expr: parque.technology
+    expr: park.technology
   - name: Mes
     expr: date_format(created_date, 'yyyy-MM')
   - name: Año

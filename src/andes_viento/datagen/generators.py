@@ -560,7 +560,15 @@ def generate_cmms_assets(spark: SparkSession, cfg: ProjectConfig, start: date, e
                    "GENERATOR_BEARING": ("generator_serial", "GEN")}[ev["component"]]
             changes.append((datetime.fromtimestamp(ev["end"], ART) + timedelta(hours=6),
                             {col[0]: _serial(col[1], u.asset_id, n)}, "U"))
-        for when, delta, op in sorted(changes, key=lambda c: c[0]):
+        # la foto inicial del CMMS ya trae los cambios anteriores a su fecha (si la historia arranca
+        # en 2025, la turbina ya tiene el firmware nuevo): se "pliegan" en el registro I
+        later = []
+        for when, delta, op in sorted(changes[1:], key=lambda c: c[0]):
+            if when <= first:
+                state = {**state, **delta}
+            else:
+                later.append((when, delta, op))
+        for when, delta, op in [changes[0], *later]:
             state = {**state, **delta}
             ingest = when.date()
             rec = (*state.values(), op, _fmt_old_or_new(when.replace(tzinfo=None)))
@@ -891,10 +899,14 @@ def generate_ppa_contracts(spark: SparkSession, cfg: ProjectConfig, start: date,
         if c.contract_id == term_id:
             changes.append((term_date, {"status": "RESCINDIDO", "end_date": term_date.isoformat()}, "U"))
             changes.append((term_date + timedelta(days=45), {}, "D"))
-        for when, delta, op in sorted(changes, key=lambda x: x[0]):
+        changes.sort(key=lambda x: x[0])
+        first_c = changes[0][0]
+        for when, delta, op in changes:
             if "price_usd_mwh" in delta and delta["price_usd_mwh"] is None:
                 delta = {"price_usd_mwh": round(state["price_usd_mwh"] * 1.02, 2)}
             state = {**state, **delta}
+            if op != "I" and when <= first_c:
+                continue  # adendas anteriores a la primera carga: ya vienen en la foto inicial
             stamp = (when.strftime("%d/%m/%Y") if when < date(2024, 3, 1) else f"{when.isoformat()}T10:00:00")
             if _in_range(when, start, end):
                 rows.append((*state.values(), op, stamp, when))

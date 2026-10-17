@@ -17,7 +17,9 @@ def test_full_pipeline_and_incremental(spark, cfg):
     leo = spark.sql(f"SELECT * FROM {g('mart_generation_vs_budget')} WHERE park_code = 'LEO' AND year_month = '2025-07'").first()
     assert leo.variance_pct < -0.15                     # la historia guionada aparece
     assert leo.lost_curtailment_mwh > 0 and leo.lost_icing_mwh > 0 and leo.lost_fault_mwh > 0
-    assert spark.table(g("dim_turbine")).where("change_reason = 'ACTUALIZACION_FIRMWARE'").count() > 0
+    # la foto inicial del CMMS ya trae el firmware de mar-2025 (los cambios previos al inicio se pliegan)
+    htw = spark.table(g("dim_turbine")).where("is_current AND manufacturer_code = 'HTW'")
+    assert htw.count() > 0 and htw.where("firmware <> 'HT-OS 5.0'").count() == 0
     before = spark.table(g("fact_turbine_10min")).count()
     # llega un día nuevo: sólo se procesa lo nuevo y el gate sigue verde
     nxt = replace(cfg, end_date=date(2025, 8, 1))

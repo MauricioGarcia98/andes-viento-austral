@@ -6,7 +6,6 @@ lenguaje que usan los analistas, Databricks SQL y Genie. Python sólo orquesta.
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
 from pyspark.sql import SparkSession
@@ -23,9 +22,54 @@ def render(sql: str, cfg: ProjectConfig) -> str:
 
 
 def split_statements(sql: str) -> list[str]:
-    """Separa por ';' de fin de sentencia ignorando comentarios de línea."""
-    no_comments = re.sub(r"--[^\n]*", "", sql)
-    return [s.strip() for s in no_comments.split(";") if s.strip()]
+    """Separa un script en sentencias por `;`, respetando strings ('...', "..."), identificadores
+    (`...`), bloques $$...$$ (YAML de metric views) y comentarios `--` (que se descartan).
+
+    Error real (bitácora): la versión anterior cortaba por cualquier `;` y rompía los COMMENT
+    del diccionario que tienen punto y coma adentro.
+    """
+    out, buf, i, n = [], [], 0, len(sql)
+    quote: str | None = None
+    while i < n:
+        ch = sql[i]
+        if quote:
+            buf.append(ch)
+            if quote == "$$" and sql.startswith("$$", i):
+                buf.append("$")
+                i += 2
+                quote = None
+                continue
+            if quote in ("'", '"') and ch == "\\" and i + 1 < n:
+                buf.append(sql[i + 1])
+                i += 2
+                continue
+            if ch == quote:
+                quote = None
+            i += 1
+            continue
+        if sql.startswith("--", i):
+            j = sql.find("\n", i)
+            i = n if j == -1 else j
+            continue
+        if sql.startswith("$$", i):
+            quote = "$$"
+            buf.append("$$")
+            i += 2
+            continue
+        if ch in ("'", '"', "`"):
+            quote = ch
+        if ch == ";":
+            stmt = "".join(buf).strip()
+            if stmt:
+                out.append(stmt)
+            buf = []
+        else:
+            buf.append(ch)
+        i += 1
+    stmt = "".join(buf).strip()
+    if stmt:
+        out.append(stmt)
+    return out
 
 
 def run_sql_file(spark: SparkSession, cfg: ProjectConfig, path: Path) -> None:

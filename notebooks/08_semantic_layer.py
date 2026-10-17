@@ -17,4 +17,11 @@ print(run_sql_folder(spark, cfg, "semantic"))
 
 # COMMAND ----------
 
-display(spark.sql(f"SHOW VIEWS IN {cfg.schema('gold')}"))
+# (SHOW VIEWS IN catalogo.esquema falla en serverless: CROSS_CATALOG_SCHEMA_REFERENCE_NOT_SUPPORTED)
+display(spark.sql(f"""
+  SELECT table_name, table_type, comment FROM {cfg.catalog}.information_schema.tables
+  WHERE table_schema = 'gold' AND (table_name LIKE 'mv_%' OR table_type = 'METRIC_VIEW')
+  UNION ALL
+  SELECT routine_name, 'FUNCTION', comment FROM {cfg.catalog}.information_schema.routines
+  WHERE routine_schema = 'gold'
+"""))
