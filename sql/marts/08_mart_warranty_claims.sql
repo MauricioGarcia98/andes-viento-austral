@@ -9,6 +9,7 @@
 -- Grano: parque eólico x mes (cada parque tiene un solo fabricante).
 -- =============================================================================
 CREATE OR REPLACE TABLE ${gold}.mart_warranty_claims
+USING DELTA
 COMMENT 'Disponibilidad contractual mensual y móvil 12 meses por parque/fabricante y reclamo estimado'
 AS
 WITH m AS (

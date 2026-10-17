@@ -39,7 +39,7 @@ Seguí SIEMPRE este orden. Cada paso tiene un archivo dueño.
 - Unit test de la transformación en `tests/test_transforms.py`; si cambia el grano, chequeo en `quality/gate.py`.
 - `ruff check src tests scripts` y `pytest -m "not integration"`.
 
-## Errores que ya nos pasaron (ver docs/07_bitacora.md)
+## Errores que ya nos pasaron (ver docs/08_bitacora.md)
 - `CF_ADD_NEW_NOT_SUPPORTED`: `.schema()` + `addNewColumns` en CSV.
 - `UNKNOWN_FIELD_EXCEPTION`: columna nueva → se reinicia el stream en código.
 - `ARRAY<STRING>` inferido para un array vacío → `JSON_SCHEMA_HINTS`.

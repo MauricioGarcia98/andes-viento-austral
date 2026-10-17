@@ -4,7 +4,7 @@ warn        la fila sigue; el fallo se cuenta en ops.dq_results (ej.: sensor cla
 quarantine  la fila se aparta a ops.quarantine con el motivo (ej.: turbina desconocida)
 fail        se aborta el job: dato que NUNCA debería existir (ej.: dólar negativo)
 
-Quién decide la acción: el Data Steward junto con el dueño del dato (ver docs/00_roles.md).
+Quién decide la acción: el Data Steward junto con el dueño del dato (ver docs/02_roles_y_decisiones.md).
 """
 
 from andes_viento.quality.expectations import Rule

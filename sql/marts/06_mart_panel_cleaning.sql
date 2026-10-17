@@ -11,6 +11,7 @@
 -- Desde junio 2025 hay sensores de suciedad: sirven para validar la estimación.
 -- =============================================================================
 CREATE OR REPLACE TABLE ${gold}.mart_panel_cleaning
+USING DELTA
 COMMENT 'Suciedad diaria estimada por parque solar, pérdida acumulada en USD y recomendación de limpieza'
 AS
 WITH d AS (
@@ -28,6 +29,10 @@ pr AS (
 ),
 ref AS (
     SELECT park_code, percentile_approx(pr, 0.95) AS pr_ref FROM pr GROUP BY park_code
+),
+cost_ref AS (  -- antes de la primera limpieza registrada se usa el costo mediano del parque
+    SELECT park_code, percentile_approx(total_cost_usd, 0.5) AS median_cleaning_cost_usd
+    FROM ${gold}.fact_maintenance_order WHERE order_type = 'LIMPIEZA' GROUP BY park_code
 ),
 cleanings AS (
     SELECT park_code, to_date(from_utc_timestamp(work_end_ts, 'America/Argentina/Buenos_Aires')) AS clean_end_date,
@@ -53,10 +58,12 @@ cal AS (
 w AS (
     SELECT cal.*,
            last_value(clean_end_date, true) OVER (PARTITION BY park_code ORDER BY reading_date)    AS last_cleaning_date,
-           last_value(cleaning_cost_usd, true) OVER (PARTITION BY park_code ORDER BY reading_date) AS last_cleaning_cost_usd,
+           coalesce(last_value(cleaning_cost_usd, true) OVER (PARTITION BY park_code ORDER BY reading_date),
+                    cr.median_cleaning_cost_usd)                                                   AS last_cleaning_cost_usd,
            last_value(cleaning_water_m3, true) OVER (PARTITION BY park_code ORDER BY reading_date) AS last_cleaning_water_m3,
            count(clean_end_date) OVER (PARTITION BY park_code ORDER BY reading_date)               AS cleaning_epoch
     FROM cal
+    LEFT JOIN cost_ref cr USING (park_code)
 ),
 priced AS (
     SELECT w.*,

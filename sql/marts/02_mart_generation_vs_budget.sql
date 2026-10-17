@@ -11,6 +11,7 @@
 -- Usa el presupuesto ORIGINAL aprobado por el directorio (versión v1).
 -- =============================================================================
 CREATE OR REPLACE TABLE ${gold}.mart_generation_vs_budget
+USING DELTA
 COMMENT 'Generación real vs. presupuesto P50 por parque y mes, con descomposición del desvío'
 AS
 WITH wind AS (

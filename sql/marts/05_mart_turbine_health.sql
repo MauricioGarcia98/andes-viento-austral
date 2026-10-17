@@ -14,6 +14,7 @@
 -- Etiqueta para evaluar el modelo: ¿hubo falla MAYOR en los 30 días siguientes?
 -- =============================================================================
 CREATE OR REPLACE TABLE ${gold}.mart_turbine_health
+USING DELTA
 COMMENT 'Salud diaria por turbina: residuos térmicos vs. pares, vibración, alarmas y riesgo de falla'
 AS
 WITH d AS (
@@ -30,11 +31,12 @@ WITH d AS (
     GROUP BY turbine_id, park_code, reading_date
 ),
 peers AS (
+    -- promedio del RESTO del parque ese día = (suma del parque - la propia) / (n - 1)
     SELECT d.*,
-           (sum(gearbox_c) OVER pd - gearbox_c) / nullif(count(gearbox_c) OVER pd - 1, 0)                    AS peer_gearbox_c,
-           (sum(main_bearing_c) OVER pd - main_bearing_c) / nullif(count(main_bearing_c) OVER pd - 1, 0)      AS peer_main_c,
-           (sum(generator_bearing_c) OVER pd - generator_bearing_c)
-               / nullif(count(generator_bearing_c) OVER pd - 1, 0)                                           AS peer_generator_c
+           ((sum(gearbox_c) OVER pd) - gearbox_c) / nullif((count(gearbox_c) OVER pd) - 1, 0)               AS peer_gearbox_c,
+           ((sum(main_bearing_c) OVER pd) - main_bearing_c) / nullif((count(main_bearing_c) OVER pd) - 1, 0) AS peer_main_c,
+           ((sum(generator_bearing_c) OVER pd) - generator_bearing_c)
+               / nullif((count(generator_bearing_c) OVER pd) - 1, 0)                                         AS peer_generator_c
     FROM d
     WINDOW pd AS (PARTITION BY park_code, reading_date)
 ),

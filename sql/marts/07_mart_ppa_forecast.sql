@@ -8,6 +8,7 @@
 -- Grano: contrato x fecha de corte.
 -- =============================================================================
 CREATE OR REPLACE TABLE ${gold}.mart_ppa_forecast
+USING DELTA
 COMMENT 'Proyección diaria de cumplimiento de cada PPA en el mes en curso y recomendación spot vs. penalidad'
 AS
 WITH park_daily AS (

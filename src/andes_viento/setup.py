@@ -2,7 +2,7 @@
 
 El CATÁLOGO no se crea acá en Databricks Free Edition: con Default Storage la API del
 bundle no puede crearlo ("Metastore storage root URL does not exist"). Se crea UNA vez
-por SQL (`CREATE CATALOG IF NOT EXISTS andes_viento_dev`), ver docs/05_despliegue.md.
+por SQL (`CREATE CATALOG IF NOT EXISTS andes_viento_dev`), ver docs/10_despliegue_y_cicd.md.
 Igual se intenta, por si el workspace tiene un metastore con storage root.
 """
 

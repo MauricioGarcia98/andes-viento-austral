@@ -10,6 +10,7 @@
 -- Grano: parque eólico x opción de batería x mes.
 -- =============================================================================
 CREATE OR REPLACE TABLE ${gold}.mart_curtailment_battery
+USING DELTA
 COMMENT 'Curtailment mensual por parque y valor que recuperaría cada tamaño de batería'
 AS
 WITH options AS (

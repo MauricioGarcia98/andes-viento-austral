@@ -26,6 +26,7 @@ from andes_viento.utils.delta import create_table_if_not_exists
 
 UNKNOWN_KEY = -1
 FAR_FUTURE = "9999-12-31 00:00:00"
+BEGIN_OF_TIME = "1900-01-01 00:00:00"
 MONTHS_ES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre",
              "noviembre", "diciembre"]
 DAYS_ES = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
@@ -131,7 +132,10 @@ def build_dim_turbine(spark: SparkSession, cfg: ProjectConfig) -> DataFrame:
             "manufacturer", "manufacturer_code", "model", "rated_kw", "rated_wind_ms", "rotor_rpm_max",
             "gearbox_serial", "main_bearing_serial", "generator_serial", "firmware", "commissioning_date",
             "guaranteed_availability", "status", "change_reason", "version",
-            F.col("valid_from").alias("effective_from"),
+            # la PRIMERA versión vale "desde siempre": si no, las lecturas anteriores a la carga
+            # inicial del CMMS (o del mismo día, antes de las 9) quedan sin turbina
+            F.when(F.col("version") == 1, F.lit(BEGIN_OF_TIME).cast("timestamp"))
+            .otherwise(F.col("valid_from")).alias("effective_from"),
             F.coalesce("valid_to", F.lit(FAR_FUTURE).cast("timestamp")).alias("effective_to"),
             "is_current", "is_deleted",
         )
@@ -214,7 +218,8 @@ def build_dim_contract(spark: SparkSession, cfg: ProjectConfig) -> DataFrame:
         "committed_mwh_month", "penalty_usd_mwh", "tolerance_pct",
         F.split("source_parks", r"\|").alias("source_parks"), "status",
         F.row_number().over(w).alias("version"),
-        F.col("valid_from").alias("effective_from"),
+        F.when(F.row_number().over(w) == 1, F.lit(BEGIN_OF_TIME).cast("timestamp"))
+        .otherwise(F.col("valid_from")).alias("effective_from"),
         F.coalesce("valid_to", F.lit(FAR_FUTURE).cast("timestamp")).alias("effective_to"), "is_current", "is_deleted",
     )
     unknown = spark.createDataFrame([(UNKNOWN_KEY, "N/D", "Desconocido")],

@@ -1,7 +1,7 @@
 -- =============================================================================
 -- fact_ppa_settlement: liquidación mensual de cada contrato PPA (contrato x mes)
 -- -----------------------------------------------------------------------------
--- Regla MATER simplificada (ver docs/02_casos_de_negocio.md):
+-- Regla MATER simplificada (ver docs/03_casos_de_negocio.md):
 --   * La energía de cada parque se asigna PRIMERO a los contratos (prioridad de despacho),
 --     a prorrata de lo que cada uno reclama; el excedente se vende al spot.
 --   * Faltante = comprometido x (1 - tolerancia) - entregado.
@@ -9,6 +9,7 @@
 --     en el spot (precio medio nacional del mes + 5 % de cargos).
 -- =============================================================================
 CREATE OR REPLACE TABLE ${gold}.fact_ppa_settlement
+USING DELTA
 COMMENT 'Liquidación mensual de contratos PPA: entregado, faltante, penalidad vs. compra spot'
 AS
 WITH gen AS (

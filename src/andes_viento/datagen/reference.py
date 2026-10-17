@@ -225,7 +225,7 @@ class Contract:
     start: date
     end: date
     price_usd_mwh: float
-    share_of_sources: float    # fracción de la generación esperada de sus parques que se compromete
+    share_of_sources: float    # fracción de la P50 de sus parques que se compromete (un PPA real: 50-75 %)
     penalty_usd_mwh: float     # penalidad por MWh faltante (take-or-pay)
     tolerance_pct: float       # faltante tolerado sin penalidad
     sources: tuple[str, ...]
@@ -234,28 +234,28 @@ class Contract:
 CONTRACTS = [
     Contract("PPA-2018-001", "Aluminios Patagónicos S.A.", "Aluminio", "30-71234567-1", "Mariano Lescano",
              "mlescano@aluminiospat.com.ar", "+54 280 444-1020", date(2018, 7, 1), date(2033, 6, 30),
-             58.0, 0.30, 32.0, 0.05, ("RAW", "MAD")),
+             58.0, 0.60, 32.0, 0.05, ("RAW", "MAD")),
     Contract("PPA-2019-002", "Cementera del Plata S.A.", "Cemento", "30-70987654-3", "Gabriela Sosa",
              "gsosa@cementeradelplata.com.ar", "+54 11 4555-2310", date(2019, 3, 1), date(2029, 2, 28),
-             61.5, 0.25, 35.0, 0.08, ("CRV", "PAM")),
+             61.5, 0.50, 35.0, 0.08, ("CRV", "PAM")),
     Contract("PPA-2020-003", "Automotriz Zárate S.A.", "Automotriz", "30-71555444-9", "Pablo Ruiz Díaz",
              "pruizdiaz@automotrizzarate.com.ar", "+54 3487 42-9900", date(2020, 1, 1), date(2030, 12, 31),
-             63.0, 0.20, 30.0, 0.10, ("GAR", "CRV")),
+             63.0, 0.30, 30.0, 0.10, ("GAR", "CRV")),
     Contract("PPA-2021-004", "Litio de la Puna S.A.", "Minería", "30-71888222-5", "Verónica Choque",
              "vchoque@litiopuna.com.ar", "+54 388 422-7781", date(2021, 6, 1), date(2036, 5, 31),
-             66.0, 0.40, 40.0, 0.05, ("SUS", "ABR")),
+             66.0, 0.70, 40.0, 0.05, ("SUS", "ABR")),
     Contract("PPA-2021-005", "Supermercados La Estrella S.A.", "Retail", "30-69111333-7", "Juan Pablo Aranda",
              "jparanda@laestrella.com.ar", "+54 351 466-3002", date(2021, 9, 1), date(2028, 8, 31),
-             68.0, 0.15, 28.0, 0.10, ("DES", "TIN")),
+             68.0, 0.30, 28.0, 0.10, ("DES", "TIN")),
     Contract("PPA-2022-006", "Frigorífico Pampeano S.A.", "Alimentos", "30-70333999-2", "Laura Etchegaray",
              "letchegaray@frigopampeano.com.ar", "+54 2954 41-5566", date(2022, 2, 1), date(2032, 1, 31),
-             64.5, 0.20, 34.0, 0.08, ("PIC", "DES")),
+             64.5, 0.35, 34.0, 0.08, ("PIC", "DES")),
     Contract("PPA-2023-007", "Data Center Austral S.R.L.", "Tecnología", "30-71999000-4", "Nicolás Brandán",
              "nbrandan@dcaustral.com.ar", "+54 11 5263-8800", date(2023, 3, 1), date(2038, 2, 28),
-             71.0, 0.45, 55.0, 0.03, ("SJU", "LEO")),
+             71.0, 0.62, 55.0, 0.03, ("SJU", "LEO")),
     Contract("PPA-2025-008", "Papelera Mesopotámica S.A.", "Papel", "30-72100200-8", "Ana Benítez",
              "abenitez@papelerameso.com.ar", "+54 343 420-1188", date(2025, 3, 1), date(2035, 2, 28),
-             62.0, 0.15, 30.0, 0.07, ("FIA", "PIC")),
+             62.0, 0.25, 30.0, 0.07, ("FIA", "PIC")),
 ]
 # La Papelera aparece recién en 2025 (INSERT); el Frigorífico rescinde en 2026 (DELETE en el CDC).
 CONTRACT_TERMINATION = ("PPA-2022-006", date(2026, 4, 30))
