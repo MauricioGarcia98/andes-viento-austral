@@ -1,0 +1,40 @@
+# Job incremental diario: "llegan" los archivos de un día nuevo y se dispara el e2e sin regenerar.
+resources:
+  jobs:
+    andes_daily:
+      name: andes-viento-daily
+      description: Simula la llegada diaria de archivos y procesa sólo lo nuevo (Auto Loader + watermarks)
+      max_concurrent_runs: 1
+      tags:
+        project: andes-viento-austral
+        layer: incremental
+      schedule:
+        quartz_cron_expression: "0 15 6 * * ?"   # 06:15 hora argentina, después del cierre de CAMMESA
+        timezone_id: America/Argentina/Buenos_Aires
+        pause_status: PAUSED
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: scale_factor
+          default: ${var.scale_factor}
+        - name: start_date
+          default: ${var.start_date}
+        - name: end_date
+          default: ${var.end_date}
+        - name: run_date
+          default: ""
+      tasks:
+        - task_key: generate_next_day
+          notebook_task:
+            notebook_path: ../notebooks/11_generate_next_day.py
+        - task_key: run_pipeline
+          depends_on: [{ task_key: generate_next_day }]
+          run_job_task:
+            job_id: ${resources.jobs.andes_e2e.id}
+            job_parameters:
+              catalog: "{{job.parameters.catalog}}"
+              scale_factor: "{{job.parameters.scale_factor}}"
+              start_date: "{{job.parameters.start_date}}"
+              end_date: "{{tasks.generate_next_day.values.run_date}}"
+              generate: "false"
+              full_refresh: "false"

@@ -34,16 +34,14 @@ SOURCES = (
     "generation_budget",    # presupuesto P50 mensual por parque (CSV, de Finanzas)
 )
 
-# Entidades silver (lo que recorre el for_each del Job).
-SILVER_ENTITIES = (
-    "assets", "crews", "contracts", "fx_rates", "spot_prices", "budget",
-    "dispatch", "weather", "work_orders", "inverter", "scada",
-)
+# Entidades silver (lo que recorren los dos for_each del Job: primero referencia, después telemetría).
+SILVER_REFERENCE = ("assets", "crews", "contracts", "fx_rates", "spot_prices", "budget", "dispatch", "weather")
+SILVER_TELEMETRY = ("scada", "inverter", "work_orders")
 
 EXPECTED_TABLES = {
     "bronze": list(SOURCES),
     "silver": [
-        "assets_history", "turbine_tags", "crews", "contracts_history", "fx_rates", "spot_prices",
+        "assets_history", "asset_tags", "crews", "contracts_history", "fx_rates", "spot_prices",
         "generation_budget", "curtailment_instructions", "weather_hourly", "work_orders",
         "work_order_parts", "inverter_5min", "scada_10min",
     ],

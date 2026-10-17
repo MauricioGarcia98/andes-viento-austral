@@ -1,0 +1,93 @@
+title: "Andes · Comercial PPA"
+domain: Comercial
+description: >-
+  Para la Gerencia Comercial: contratos PPA del MATER, cumplimiento mensual, faltantes, penalidades y la
+  decisión de cubrir en el spot. Incluye la proyección del mes en curso.
+users: "Sofía Bertolini (Gerente Comercial) y Paula Giménez (Analista Comercial)"
+tables:
+  - gold.fact_ppa_settlement
+  - gold.mart_ppa_forecast
+  - gold.dim_contract
+  - gold.v_contract_park_month
+  - gold.dim_park
+metric_views:
+  - gold.mv_ppa
+functions:
+  - gold.fn_proyeccion_ppa
+instructions: |
+  Sos el asistente Comercial de Andes Viento Austral. Los clientes son industrias con contratos PPA en el MATER.
+  - "Este mes" = el mes del último as_of_date de gold.mart_ppa_forecast. Para la proyección del mes usá fn_proyeccion_ppa.
+  - Los usuarios nombran clientes por nombre corto ("el data center", "Litio", "la papelera"): buscá con ILIKE en client_name.
+  - Cumplimiento = entregado / comprometido. Hay faltante sólo si lo entregado queda debajo de comprometido x (1 - tolerancia).
+  - Ante un faltante, compará penalty_cost_usd (pagar la penalidad) con spot_cover_cost_usd (comprar en el spot);
+    best_option ya dice cuál conviene. Montos en USD sin decimales.
+  - Para contratos usá dim_contract con is_current = true salvo que pregunten por la historia (adendas, cambios de precio).
+  - Datos de contacto y precios son confidenciales: si salen enmascarados es por permisos, no es un error.
+sample_questions:
+  - "¿Vamos a llegar al volumen comprometido este mes con cada cliente?"
+  - "¿Qué contrato tuvo más penalidades en 2025?"
+  - "¿Conviene comprar en el spot o pagar la penalidad con el data center?"
+  - "¿Cómo cambió el precio del contrato de Aluminios Patagónicos?"
+examples:
+  - question: "¿Vamos a llegar al volumen comprometido este mes?"
+    sql: "SELECT client_name, projected_compliance_pct, projected_shortfall_mwh, recommendation FROM ${catalog}.gold.fn_proyeccion_ppa(NULL) ORDER BY projected_compliance_pct"
+  - question: "Cumplimiento anual por cliente"
+    sql: |
+      SELECT client_name, year(month_start) AS anio, round(sum(delivered_mwh) / sum(committed_mwh) * 100, 1) AS cumplimiento_pct,
+             round(sum(best_option_cost_usd), 0) AS costo_faltantes_usd
+      FROM ${catalog}.gold.fact_ppa_settlement GROUP BY ALL ORDER BY anio, cumplimiento_pct
+  - question: "Faltantes por mes del data center y qué convenía hacer"
+    sql: |
+      SELECT year_month, shortfall_mwh, penalty_cost_usd, spot_cover_cost_usd, best_option
+      FROM ${catalog}.gold.fact_ppa_settlement WHERE client_name ILIKE '%data center%' AND shortfall_mwh > 0 ORDER BY year_month
+  - question: "Historia de precio de un contrato (adendas)"
+    sql: |
+      SELECT contract_id, version, effective_from, price_usd_mwh, committed_mwh_month, status
+      FROM ${catalog}.gold.dim_contract WHERE client_name ILIKE '%aluminios%' ORDER BY version
+  - question: "Ingresos PPA por sector (metric view)"
+    sql: |
+      SELECT `Sector`, `Año`, round(MEASURE(`Ingresos PPA (USD)`), 0) AS ingresos_usd
+      FROM ${catalog}.gold.mv_ppa GROUP BY ALL ORDER BY `Año`, ingresos_usd DESC
+benchmarks:
+  - q: "¿Cuántos contratos PPA vigentes hay?"
+    sql: "SELECT count(*) FROM ${catalog}.gold.dim_contract WHERE is_current AND NOT is_deleted AND contract_key <> -1 AND status = 'VIGENTE'"
+  - q: "¿Qué cliente tiene el precio PPA más alto?"
+    sql: "SELECT client_name, price_usd_mwh FROM ${catalog}.gold.dim_contract WHERE is_current AND contract_key <> -1 ORDER BY price_usd_mwh DESC LIMIT 1"
+  - q: "¿Qué contrato se rescindió?"
+    sql: "SELECT DISTINCT contract_id, client_name FROM ${catalog}.gold.dim_contract WHERE status = 'RESCINDIDO'"
+  - q: "¿Qué contrato empezó en 2025?"
+    sql: "SELECT DISTINCT contract_id, client_name FROM ${catalog}.gold.dim_contract WHERE year(start_date) = 2025"
+  - q: "¿Cuál fue el cumplimiento total de la cartera en 2025?"
+    sql: "SELECT round(sum(delivered_mwh) / sum(committed_mwh), 4) FROM ${catalog}.gold.fact_ppa_settlement WHERE year(month_start) = 2025"
+  - q: "¿Qué cliente tuvo el peor cumplimiento en 2025?"
+    sql: "SELECT client_name, round(sum(delivered_mwh) / sum(committed_mwh), 4) AS c FROM ${catalog}.gold.fact_ppa_settlement WHERE year(month_start) = 2025 GROUP BY client_name ORDER BY c LIMIT 1"
+  - q: "¿Cuántos meses tuvo faltante el contrato del Data Center Austral?"
+    sql: "SELECT count(*) FROM ${catalog}.gold.fact_ppa_settlement WHERE contract_id = 'PPA-2023-007' AND shortfall_mwh > 0"
+  - q: "¿Cuánto hubiera costado cubrir todos los faltantes de 2025 con la mejor opción?"
+    sql: "SELECT round(sum(best_option_cost_usd), 0) FROM ${catalog}.gold.fact_ppa_settlement WHERE year(month_start) = 2025"
+  - q: "¿En cuántos casos convenía comprar en el spot en vez de pagar la penalidad?"
+    sql: "SELECT count(*) FROM ${catalog}.gold.fact_ppa_settlement WHERE best_option = 'COMPRAR_SPOT'"
+  - q: "¿Cuánto MWh entregamos a Litio de la Puna en 2025?"
+    sql: "SELECT round(sum(delivered_mwh), 1) FROM ${catalog}.gold.fact_ppa_settlement WHERE client_name ILIKE '%litio%' AND year(month_start) = 2025"
+  - q: "¿Cuáles son los parques de origen del contrato del data center?"
+    sql: "SELECT source_parks FROM ${catalog}.gold.dim_contract WHERE contract_id = 'PPA-2023-007' AND is_current"
+  - q: "¿Cuántas versiones tiene el contrato PPA-2023-007?"
+    sql: "SELECT count(*) FROM ${catalog}.gold.dim_contract WHERE contract_id = 'PPA-2023-007'"
+  - q: "¿Cuánto subió el volumen comprometido del data center con la adenda de 2024?"
+    sql: "SELECT max(committed_mwh_month) - min(committed_mwh_month) FROM ${catalog}.gold.dim_contract WHERE contract_id = 'PPA-2023-007'"
+  - q: "Precio actual del contrato de Aluminios Patagónicos"
+    sql: "SELECT price_usd_mwh FROM ${catalog}.gold.dim_contract WHERE contract_id = 'PPA-2018-001' AND is_current"
+  - q: "Ingresos PPA totales en 2025 en USD"
+    sql: "SELECT round(sum(revenue_usd), 0) FROM ${catalog}.gold.fact_ppa_settlement WHERE year(month_start) = 2025"
+  - q: "¿Qué recomendación hay hoy para el contrato del Data Center Austral?"
+    sql: "SELECT recommendation FROM ${catalog}.gold.fn_proyeccion_ppa('PPA-2023-007')"
+  - q: "¿Cuántos contratos proyectan faltante este mes?"
+    sql: "SELECT count(*) FROM ${catalog}.gold.fn_proyeccion_ppa(NULL) WHERE projected_shortfall_mwh > 0"
+  - q: "Cumplimiento proyectado de la papelera este mes"
+    sql: "SELECT projected_compliance_pct FROM ${catalog}.gold.fn_proyeccion_ppa('papelera')"
+  - q: "¿Cuál fue el mes con más penalidades (mejor opción) en toda la historia?"
+    sql: "SELECT year_month, round(sum(best_option_cost_usd), 0) AS usd FROM ${catalog}.gold.fact_ppa_settlement GROUP BY year_month ORDER BY usd DESC LIMIT 1"
+  - q: "Volumen comprometido total mensual de la cartera vigente"
+    sql: "SELECT round(sum(committed_mwh_month), 1) FROM ${catalog}.gold.dim_contract WHERE is_current AND NOT is_deleted AND contract_key <> -1 AND status = 'VIGENTE'"
+  - q: "¿Cuántos clientes son del sector Minería?"
+    sql: "SELECT count(DISTINCT contract_id) FROM ${catalog}.gold.dim_contract WHERE sector = 'Minería'"

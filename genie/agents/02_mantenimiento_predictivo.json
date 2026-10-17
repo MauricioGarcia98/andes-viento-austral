@@ -1,0 +1,478 @@
+{
+  "title": "Andes · Mantenimiento predictivo",
+  "description": "Para Mantenimiento y Confiabilidad: salud de turbinas (multiplicadora, rodamientos), órdenes de trabajo, tiempos de parada, costos y disponibilidad contra la garantía del fabricante (97 %).",
+  "domain": "Operación",
+  "users": "Ramiro Llancaqueo (Jefe de Mantenimiento), Joaquín Ortiz (Ing. de Confiabilidad), líderes de cuadrilla",
+  "serialized_space": {
+    "version": 2,
+    "config": {
+      "sample_questions": [
+        {
+          "id": "2d288a3184077bc82f7692972ab68039",
+          "question": [
+            "¿Qué turbinas tienen riesgo alto de falla hoy?"
+          ]
+        },
+        {
+          "id": "5141bb66c3cd1f9abe00bb80f0c4ff30",
+          "question": [
+            "¿Cuánto tardamos en promedio en reparar una multiplicadora en Santa Cruz?"
+          ]
+        },
+        {
+          "id": "3835cb898dda9405e7a694434e7001a1",
+          "question": [
+            "¿Corresponde reclamarle al fabricante por disponibilidad este año?"
+          ]
+        },
+        {
+          "id": "ab716ae60ec47b02dc3e8304bbe387f8",
+          "question": [
+            "¿Cuánto gastamos en correctivas mayores en 2025?"
+          ]
+        }
+      ]
+    },
+    "data_sources": {
+      "tables": [
+        {
+          "identifier": "${catalog}.gold.dim_crew"
+        },
+        {
+          "identifier": "${catalog}.gold.dim_park"
+        },
+        {
+          "identifier": "${catalog}.gold.dim_turbine"
+        },
+        {
+          "identifier": "${catalog}.gold.fact_availability_daily"
+        },
+        {
+          "identifier": "${catalog}.gold.fact_maintenance_order"
+        },
+        {
+          "identifier": "${catalog}.gold.mart_turbine_health"
+        },
+        {
+          "identifier": "${catalog}.gold.mart_warranty_claims"
+        },
+        {
+          "identifier": "${catalog}.gold.mv_disponibilidad"
+        },
+        {
+          "identifier": "${catalog}.gold.mv_mantenimiento"
+        },
+        {
+          "identifier": "${catalog}.gold.mv_salud_turbinas"
+        }
+      ]
+    },
+    "instructions": {
+      "text_instructions": [
+        {
+          "id": "62e01efa7ebd845fa40cb9e63c6e17de",
+          "content": [
+            "Sos el asistente de Mantenimiento de Andes Viento Austral.\n",
+            "- \"Hoy\" es el último día con datos (max(reading_date) de gold.mart_turbine_health). Nunca uses current_date().\n",
+            "- Riesgo de falla: usá fn_turbinas_en_riesgo(parque). health_score < 60 = riesgo ALTO; avisá el componente sospechado.\n",
+            "- Una turbina se identifica por turbine_tag (ej. CRV-WTG007) o turbine_id (WTG00031). En Cerro Arenales los nombres\n",
+            "  cambiaron en jun-2024 ('CRV-07' -> 'CRV-WTG007'): para la versión vigente filtrá dim_turbine.is_current.\n",
+            "- Falla mayor = order_type 'CORRECTIVA' y severity 'MAYOR' (multiplicadora, rodamiento principal, rodamiento del generador).\n",
+            "- MTTR = promedio de downtime_hours de correctivas. Costos siempre en USD (total_cost_usd), salvo que pidan pesos.\n",
+            "- Disponibilidad contractual (garantía): usar mart_warranty_claims.availability_12m o la metric view mv_disponibilidad.\n",
+            "  La garantía es 97 %; las horas de ruta cortada por nieve son fuerza mayor y no cuentan."
+          ]
+        }
+      ],
+      "example_question_sqls": [
+        {
+          "id": "1141b8681452c69995bbf03312bc6580",
+          "question": [
+            "¿Qué turbinas tienen riesgo alto de falla hoy?"
+          ],
+          "sql": [
+            "SELECT * FROM ${catalog}.gold.fn_turbinas_en_riesgo(NULL) WHERE risk_level = 'ALTO'"
+          ]
+        },
+        {
+          "id": "a4bb97b789edc5360aab8a8dc6e9926f",
+          "question": [
+            "Tiempo medio de reparación de fallas mayores por componente y provincia"
+          ],
+          "sql": [
+            "SELECT p.province, o.component, count(*) AS fallas, round(avg(o.downtime_hours) / 24, 1) AS dias_parada_promedio,\n",
+            "       round(avg(o.waiting_hours) / 24, 1) AS dias_esperando_repuestos\n",
+            "FROM ${catalog}.gold.fact_maintenance_order o JOIN ${catalog}.gold.dim_park p USING (park_key)\n",
+            "WHERE o.order_type = 'CORRECTIVA' AND o.severity = 'MAYOR'\n",
+            "GROUP BY ALL ORDER BY dias_parada_promedio DESC"
+          ]
+        },
+        {
+          "id": "c88193ed31e3380a3a1e164b64431d6e",
+          "question": [
+            "Disponibilidad móvil 12 meses por fabricante en el último mes (metric view)"
+          ],
+          "sql": [
+            "SELECT `Fabricante`, round(MEASURE(`Disponibilidad contractual`) * 100, 2) AS disponibilidad_pct\n",
+            "FROM ${catalog}.gold.mv_disponibilidad\n",
+            "WHERE `Mes` >= date_format(add_months((SELECT max(month_start) FROM ${catalog}.gold.mart_warranty_claims), -11), 'yyyy-MM')\n",
+            "GROUP BY ALL"
+          ]
+        },
+        {
+          "id": "6d818884e59734c24c9312e3879a42d5",
+          "question": [
+            "¿Cuánto hay para reclamar al fabricante en 2025?"
+          ],
+          "sql": [
+            "SELECT * FROM ${catalog}.gold.fn_reclamos_garantia(2025)"
+          ]
+        },
+        {
+          "id": "cdc2438d2f304b5277c96d94b3e3ac53",
+          "question": [
+            "Costo de mantenimiento en USD por año y tipo de orden"
+          ],
+          "sql": [
+            "SELECT year(created_date) AS anio, order_type, round(sum(total_cost_usd), 0) AS costo_usd\n",
+            "FROM ${catalog}.gold.fact_maintenance_order GROUP BY ALL ORDER BY anio, order_type"
+          ]
+        },
+        {
+          "id": "ac335eb0dc86f6ac99e3ffaa23f64889",
+          "question": [
+            "¿Con cuántos días de anticipación detectó el modelo las fallas mayores?"
+          ],
+          "sql": [
+            "SELECT turbine_id, next_major_failure_date, max(days_to_failure) AS dias_de_anticipacion\n",
+            "FROM ${catalog}.gold.mart_turbine_health\n",
+            "WHERE risk_level = 'ALTO' AND failure_within_30d\n",
+            "GROUP BY ALL ORDER BY next_major_failure_date"
+          ]
+        }
+      ],
+      "sql_functions": [
+        {
+          "id": "e90bb8321f5a5c3257645eff9281e89a",
+          "identifier": "${catalog}.gold.fn_reclamos_garantia"
+        },
+        {
+          "id": "a5f0f68658b91dabe93e15e5778b56e4",
+          "identifier": "${catalog}.gold.fn_turbinas_en_riesgo"
+        }
+      ]
+    },
+    "benchmarks": {
+      "questions": [
+        {
+          "id": "27186fc9c8ee7100606d7b510db95cc9",
+          "question": [
+            "¿Cuántas turbinas hay en total?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT count(*) FROM ${catalog}.gold.dim_turbine WHERE is_current AND turbine_key <> -1"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "39c968641f71857c10897129f7b0b081",
+          "question": [
+            "¿Cuántas turbinas tiene cada fabricante?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT manufacturer, count(*) FROM ${catalog}.gold.dim_turbine WHERE is_current AND turbine_key <> -1 GROUP BY manufacturer"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "f35f1dbeadc19835c0225cc9f3880602",
+          "question": [
+            "¿Cuántas fallas mayores hubo en total?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT count(*) FROM ${catalog}.gold.fact_maintenance_order WHERE order_type = 'CORRECTIVA' AND severity = 'MAYOR'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "39f9041a5e32cac7e1bd60cdff4516f1",
+          "question": [
+            "¿Cuántas fallas mayores de multiplicadora hubo en 2025?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT count(*) FROM ${catalog}.gold.fact_maintenance_order WHERE severity = 'MAYOR' AND component = 'GEARBOX' AND year(created_date) = 2025"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "6ce2ad51b1f8c2f89c33b0db74125c5d",
+          "question": [
+            "¿Cuántos días estuvo parada la turbina de Cañadón León que rompió la multiplicadora en julio 2025?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(downtime_hours / 24, 1) FROM ${catalog}.gold.fact_maintenance_order WHERE park_code = 'LEO' AND component = 'GEARBOX' AND severity = 'MAYOR' AND date_format(created_date, 'yyyy-MM') = '2025-07'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "35f03b9473d9fb0c32a28f94a157a1ec",
+          "question": [
+            "MTTR de correctivas en 2025 en horas"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(avg(downtime_hours), 1) FROM ${catalog}.gold.fact_maintenance_order WHERE order_type = 'CORRECTIVA' AND year(created_date) = 2025"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "3d21afbd3098bcba72560895d05b7769",
+          "question": [
+            "¿Cuántas órdenes preventivas se hicieron en 2024?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT count(*) FROM ${catalog}.gold.fact_maintenance_order WHERE order_type = 'PREVENTIVA' AND year(created_date) = 2024"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "4cbbcc05e66a20f78a99816a35cb1ef5",
+          "question": [
+            "¿Cuál fue el costo total de mantenimiento en USD en 2025?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(sum(total_cost_usd), 0) FROM ${catalog}.gold.fact_maintenance_order WHERE year(created_date) = 2025"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "c64193bff1626f28fe42bb4526c9b7ee",
+          "question": [
+            "¿Cuánto costó la mano de obra en pesos en 2024 vs 2023?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT year(created_date) AS anio, round(sum(labor_cost_ars), 0) FROM ${catalog}.gold.fact_maintenance_order WHERE year(created_date) IN (2023, 2024) GROUP BY 1 ORDER BY 1"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "16dbee1784240c2dbfe8e89da8225ae5",
+          "question": [
+            "¿Qué parque tiene más horas de falla en 2025?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT park_code, round(sum(fault_h), 1) AS horas FROM ${catalog}.gold.fact_availability_daily WHERE year(reading_date) = 2025 GROUP BY park_code ORDER BY horas DESC LIMIT 1"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "6c75d3ec8b26211a3bfa76424782989e",
+          "question": [
+            "Disponibilidad contractual móvil 12 meses de Cañadón León en el último mes"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT availability_12m FROM ${catalog}.gold.mart_warranty_claims WHERE park_code = 'LEO' AND month_start = (SELECT max(month_start) FROM ${catalog}.gold.mart_warranty_claims)"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "59c614cbef5b64d749294605d23f84bf",
+          "question": [
+            "¿En cuántos meses corresponde reclamar al fabricante Hanse Turbinen Werke?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT count(*) FROM ${catalog}.gold.mart_warranty_claims WHERE manufacturer = 'Hanse Turbinen Werke' AND claim_eligible"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "4342b67c81329751724c03516f401ae0",
+          "question": [
+            "¿Cuántos USD de liquidated damages se devengaron en total?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(sum(ld_accrued_usd), 0) FROM ${catalog}.gold.mart_warranty_claims"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "09c18ec948a83279ae7557bd72b676ce",
+          "question": [
+            "¿Cuántas turbinas están en riesgo alto hoy?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT count(*) FROM ${catalog}.gold.mart_turbine_health WHERE risk_level = 'ALTO' AND reading_date = (SELECT max(reading_date) FROM ${catalog}.gold.mart_turbine_health)"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "97a47536c99b06d0e8a2baf748e8cb1d",
+          "question": [
+            "¿Cuántas versiones tiene la turbina WTG00033 en dim_turbine?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT count(*) FROM ${catalog}.gold.dim_turbine WHERE turbine_id = 'WTG00033'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "d1165f4a9740e21de091126b1ff571d6",
+          "question": [
+            "¿Cuántas multiplicadoras se reemplazaron?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT count(*) FROM ${catalog}.gold.dim_turbine WHERE change_reason = 'CAMBIO_MULTIPLICADORA'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "1395a265db0566b1a77ed89bcc7a2f4c",
+          "question": [
+            "¿Cuántas turbinas fueron renombradas?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT count(DISTINCT turbine_id) FROM ${catalog}.gold.dim_turbine WHERE change_reason = 'RENOMBRE'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "6eab7d19cd902b1dad7e41256227849b",
+          "question": [
+            "Horas promedio de espera de repuestos en fallas mayores"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(avg(waiting_hours), 1) FROM ${catalog}.gold.fact_maintenance_order WHERE severity = 'MAYOR'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "83d0fe9e3bba3472835b03bd1d723c92",
+          "question": [
+            "¿Cuántas horas de demora por ruta cortada por nieve hubo en 2025?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(sum(access_delay_h), 1) FROM ${catalog}.gold.fact_maintenance_order WHERE year(created_date) = 2025"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "788761ed894086ea71fc6b45e88bf2fc",
+          "question": [
+            "¿Qué cuadrilla atendió más órdenes?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT c.crew_id, count(*) AS ordenes FROM ${catalog}.gold.fact_maintenance_order o JOIN ${catalog}.gold.dim_crew c USING (crew_key) WHERE c.crew_id <> 'N/D' GROUP BY c.crew_id ORDER BY ordenes DESC LIMIT 1"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "f5cfc113541b46491ce09cb2074cc90d",
+          "question": [
+            "¿Cuántas órdenes están abiertas?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT count(*) FROM ${catalog}.gold.fact_maintenance_order WHERE is_open"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "9ba27d47b497ea95229214583a641093",
+          "question": [
+            "Disponibilidad contractual promedio de la flota eólica en 2025"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(1 - sum(chargeable_fault_h) / sum(useful_h), 4) FROM ${catalog}.gold.mart_warranty_claims WHERE year(month_start) = 2025"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

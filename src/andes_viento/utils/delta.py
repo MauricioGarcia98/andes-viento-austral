@@ -88,3 +88,30 @@ def optimize(spark: SparkSession, full_name: str, zorder_by: Sequence[str] = ())
     if zorder_by and not is_databricks():
         stmt += f" ZORDER BY ({', '.join(zorder_by)})"
     spark.sql(stmt)
+
+
+def merge_cdc(
+    spark: SparkSession,
+    source: DataFrame,
+    target_name: str,
+    keys: Iterable[str],
+    sequence_col: str,
+    delete_col: str = "is_deleted",
+) -> None:
+    """MERGE de un feed CDC con imagen completa (SCD1 con bajas).
+
+    * `delete_col` verdadero  -> se BORRA la fila destino (op = 'D').
+    * `sequence_col` más nuevo -> se actualiza; uno más viejo que llega tarde se ignora.
+    El lote debe venir deduplicado (un evento por clave: el último).
+    """
+    keys = list(keys)
+    cond = " AND ".join(f"t.`{k}` = s.`{k}`" for k in keys)
+    newer = f"s.`{sequence_col}` >= t.`{sequence_col}`"
+    (
+        DeltaTable.forName(spark, target_name).alias("t")
+        .merge(source.alias("s"), cond)
+        .whenMatchedDelete(condition=f"s.`{delete_col}` AND {newer}")
+        .whenMatchedUpdateAll(condition=f"NOT s.`{delete_col}` AND {newer}")
+        .whenNotMatchedInsertAll(condition=f"NOT s.`{delete_col}`")
+        .execute()
+    )

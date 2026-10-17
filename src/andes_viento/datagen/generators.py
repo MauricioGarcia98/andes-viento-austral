@@ -39,6 +39,8 @@ from andes_viento.datagen.rand import prng, uniform
 
 ART_S = ph.ART_OFFSET_S
 ART = E.ART
+# el generador "conoce el futuro": una falla de dentro de 3 semanas ya degrada la turbina hoy
+HORIZON = timedelta(days=45)
 
 
 def _set_utc(spark: SparkSession) -> None:
@@ -129,7 +131,7 @@ def generate_scada_turbine(spark: SparkSession, cfg: ProjectConfig, start: date,
     tur = _turbines_df(spark, cfg)
     mfr_of = {u.asset_id: u.manufacturer for u in E.fleet(cfg, "WTG")}
     ev_rows = [dict(e, alarm=_alarm_for(mfr_of.get(e["asset_id"]), e["kind"], e["component"]))
-               for e in E.downtime_events(cfg, end) if e["asset_type"] == "WTG"]
+               for e in E.downtime_events(cfg, end + HORIZON) if e["asset_type"] == "WTG"]
     L = T.LongType()
     events = _array_of_structs(spark, ev_rows, "asset_id", [("kind", T.StringType()), ("component", T.StringType()),
                                ("start", L), ("end", L), ("degrade_start", L), ("alarm", T.StringType())], "ev_asset")
@@ -355,7 +357,7 @@ def generate_inverter_5min(spark: SparkSession, cfg: ProjectConfig, start: date,
     soil = spark.createDataFrame([(k[0], k[1], v) for k, v in soil_series.items()],
                                  "park string, date_local date, soiling double")
     L = T.LongType()
-    ev = _array_of_structs(spark, [e for e in E.downtime_events(cfg, end) if e["asset_type"] == "INV"], "asset_id",
+    ev = _array_of_structs(spark, [e for e in E.downtime_events(cfg, end + HORIZON) if e["asset_type"] == "INV"], "asset_id",
                            [("start", L), ("end", L)], "ev_asset")
     wx = _weather_days_df(spark, cfg, end).select("park", "date_local", "cloud", "temp_anom")
     t0, t1 = E.local_epoch(gen_from), E.local_epoch(end + timedelta(days=1))
@@ -524,7 +526,7 @@ def _in_range(d: date, start: date, end: date) -> bool:
 def generate_cmms_assets(spark: SparkSession, cfg: ProjectConfig, start: date, end: date) -> DataFrame:
     rows: list[tuple] = []
     majors = defaultdict(list)
-    for ev in E.downtime_events(cfg, end):
+    for ev in E.downtime_events(cfg, end + HORIZON):
         if ev["kind"] == "MAJOR_FAILURE":
             majors[ev["asset_id"]].append(ev)
     pei_fw, (drift_mfr, drift_date, _) = date(2024, 2, 1), R.SCHEMA_DRIFT_SCADA
@@ -617,7 +619,7 @@ def _work_orders(cfg: ProjectConfig, end: date) -> list[dict]:
     """Una lista de órdenes con todos sus hitos (lo que después se emite como CDC)."""
     tags = {u.asset_id: u for u in E.fleet(cfg)}
     orders: list[dict] = []
-    for ev in E.downtime_events(cfg, end):
+    for ev in E.downtime_events(cfg, end + HORIZON):
         rng = prng(cfg.seed, "wo", ev["asset_id"], ev["start"])
         if ev["remote"] and rng.random() < 0.5:
             continue  # la mitad de los resets remotos ni siquiera se registra (¡dato que falta!)
@@ -632,7 +634,7 @@ def _work_orders(cfg: ProjectConfig, end: date) -> list[dict]:
         crew = ("CU-NOA-02" if ev["asset_type"] == "INV" else "CU-PAT-01" if ev["kind"] == "MAJOR_FAILURE"
                 else "CU-PAT-04" if ev["kind"] == "PREVENTIVE" else rng.choice(["CU-PAT-02", "CU-PAT-03"]))
         parts = [{"part_code": c, "description": d, "qty": q, "unit_cost_usd": round(p * rng.uniform(0.95, 1.1), 2)}
-                 for c, d, q, p in PART_CATALOG.get(ev["component"], [])]
+                 for c, d, q, p in PART_CATALOG.get(ev["component"], [])] or None
         crew_size = next(c[4] for c in R.CREWS if c[0] == crew)
         hours = 0.5 if ev["remote"] else crew_size * (ev["repair_h"] + 2 * ev["travel_h"] + 4)
         orders.append({
@@ -656,7 +658,7 @@ def _work_orders(cfg: ProjectConfig, end: date) -> list[dict]:
         orders.append({
             "asset_id": None, "park": c["park"], "kind": "CLEANING", "component": "LIMPIEZA", "failure_at": None,
             "created": s - timedelta(days=rng.randint(3, 8)), "arrived": s, "work_start": s, "work_end": f,
-            "closed": f + timedelta(hours=rng.uniform(4, 48)), "crew": "CU-NOA-01", "parts": [],
+            "closed": f + timedelta(hours=rng.uniform(4, 48)), "crew": "CU-NOA-01", "parts": None,
             "labor_h": 8 * 10 * days, "travel_km": 2 * park.distance_km, "access_delay_h": 0.0, "crane_usd": 0.0,
             "water_m3": c["water_m3"], "unit": None, "remote": False, "trigger": c["trigger"],
         })

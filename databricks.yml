@@ -1,0 +1,52 @@
+# =============================================================================
+# Databricks Asset Bundle (DAB) — infraestructura como código de Andes Viento Austral.
+#
+#   0) UNA SOLA VEZ, en el SQL Editor (Free Edition no deja crear catálogos por API):
+#        CREATE CATALOG IF NOT EXISTS andes_viento_dev;
+#        CREATE CATALOG IF NOT EXISTS andes_viento;
+#   1) databricks bundle validate
+#   2) databricks bundle deploy -t dev        # sube código + crea jobs, pipeline, dashboards y app
+#   3) databricks bundle run andes_e2e -t dev # corre el pipeline completo (~1 h a SF 0.1)
+#   4) python scripts/deploy_genie.py -t dev  # crea/actualiza los 4 Genie Agents
+#
+# El host del workspace se toma de DATABRICKS_HOST o de ~/.databrickscfg.
+# =============================================================================
+bundle:
+  name: andes-viento-austral
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    description: Catálogo de Unity Catalog donde vive el proyecto (se crea a mano por SQL)
+    default: andes_viento_dev
+  scale_factor:
+    description: "Flota: 0.1 (37 turbinas, ~3 GB, Free Edition), 1 (380 turbinas, ~30 GB), 10 (~300 GB)"
+    default: "0.1"
+  start_date:
+    default: "2023-01-01"
+  end_date:
+    default: "2026-09-30"
+  warehouse_id:
+    description: SQL warehouse para dashboards, metric views y Genie
+    lookup:
+      warehouse: Serverless Starter Warehouse
+
+targets:
+  dev:
+    mode: development       # prefija recursos con [dev <usuario>] y pausa los schedules
+    default: true
+    variables:
+      catalog: andes_viento_dev
+
+  prod:
+    mode: production
+    # En una empresa real prod lo despliega un service principal (run_as) desde CI/CD y la carpeta
+    # es restringida. En Free Edition hay un solo usuario: carpeta propia (no /Workspace/Shared,
+    # que da escritura a todos y el validate lo advierte).
+    workspace:
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      catalog: andes_viento
+      scale_factor: "0.1"   # en un workspace pago: "1" (flota real)
