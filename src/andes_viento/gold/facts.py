@@ -301,6 +301,10 @@ def load_fact_maintenance_order(spark: SparkSession, cfg: ProjectConfig) -> int:
 
 
 # ================================================== fact_availability_daily
+def _clamp01(c: F.Column) -> F.Column:
+    return F.round(F.least(F.lit(1.0), F.greatest(F.lit(0.0), c)), 5)
+
+
 def build_fact_availability_daily(spark: SparkSession, cfg: ProjectConfig, dates: list | None) -> DataFrame:
     t = spark.table(cfg.table("gold", "fact_turbine_10min"))
     if dates is not None:
@@ -330,9 +334,9 @@ def build_fact_availability_daily(spark: SparkSession, cfg: ProjectConfig, dates
         "date_key", "reading_date", "park_key", "turbine_key", "park_code", "turbine_id", "manufacturer",
         "readings", F.round(no_data, 2).alias("no_data_h"), "producing_h", "wind_out_of_range_h", "fault_h",
         "maintenance_h", "icing_h", "curtailed_h", F.round(excluded, 2).alias("excluded_h"),
-        F.round(F.try_divide(period - excluded - F.col("fault_h"), period - excluded), 5)
-        .alias("availability_contractual"),
-        F.round(F.try_divide(period - no_data - F.col("fault_h") - F.col("maintenance_h"), period - no_data), 5)
+        # acotado a [0, 1]: las horas vienen redondeadas y 16,67 + 7,33 > 24 daba -0,0002 (lo atrapó el gate)
+        _clamp01(F.try_divide(period - excluded - F.col("fault_h"), period - excluded)).alias("availability_contractual"),
+        _clamp01(F.try_divide(period - no_data - F.col("fault_h") - F.col("maintenance_h"), period - no_data))
         .alias("availability_technical"),
         F.round(F.try_divide(F.col("energy_mwh"),
                              F.col("energy_mwh") + F.col("lost_fault_mwh") + F.col("lost_maintenance_mwh")), 5)

@@ -8,9 +8,9 @@
     "config": {
       "sample_questions": [
         {
-          "id": "f702de01be2d155975149c89454b101b",
+          "id": "42af520a6e1f927eae251bfd8ecdd2e5",
           "question": [
-            "¿Cuántos MWh y USD perdimos por curtailment en 2025?"
+            "¿Cuánto nos costó en USD el desvío contra presupuesto de este año?"
           ]
         },
         {
@@ -20,15 +20,15 @@
           ]
         },
         {
-          "id": "42af520a6e1f927eae251bfd8ecdd2e5",
-          "question": [
-            "¿Cuánto nos costó en USD el desvío contra presupuesto de este año?"
-          ]
-        },
-        {
           "id": "d7deb9d51c958eda33bc59fd7620c548",
           "question": [
             "¿Por qué subió el costo de mantenimiento en dólares en 2024 si la inflación bajó?"
+          ]
+        },
+        {
+          "id": "f702de01be2d155975149c89454b101b",
+          "question": [
+            "¿Cuántos MWh y USD perdimos por curtailment en 2025?"
           ]
         }
       ]
@@ -82,21 +82,31 @@
       ],
       "example_question_sqls": [
         {
-          "id": "6b991ab477dd026fe99f60f217723165",
-          "question": [
-            "¿Cuántos MWh y USD perdimos por curtailment en 2025?"
-          ],
-          "sql": [
-            "SELECT * FROM ${catalog}.gold.fn_perdida_curtailment(NULL, DATE'2025-01-01', DATE'2025-12-31') ORDER BY curtailed_mwh DESC"
-          ]
-        },
-        {
           "id": "416e387a0bf1c3ade7821c199991a53d",
           "question": [
             "¿En qué parque conviene invertir en baterías?"
           ],
           "sql": [
             "SELECT * FROM ${catalog}.gold.fn_ranking_baterias(12) ORDER BY ranking LIMIT 5"
+          ]
+        },
+        {
+          "id": "59bf7c891811b8b1af656a9ec031bf19",
+          "question": [
+            "Desvío de generación valorizado en USD por año"
+          ],
+          "sql": [
+            "SELECT year, round(sum(variance_mwh), 1) AS desvio_mwh, round(sum(variance_value_usd), 0) AS desvio_usd\n",
+            "FROM ${catalog}.gold.mart_generation_vs_budget GROUP BY year ORDER BY year"
+          ]
+        },
+        {
+          "id": "6b991ab477dd026fe99f60f217723165",
+          "question": [
+            "¿Cuántos MWh y USD perdimos por curtailment en 2025?"
+          ],
+          "sql": [
+            "SELECT * FROM ${catalog}.gold.fn_perdida_curtailment(NULL, DATE'2025-01-01', DATE'2025-12-31') ORDER BY curtailed_mwh DESC"
           ]
         },
         {
@@ -111,13 +121,13 @@
           ]
         },
         {
-          "id": "59bf7c891811b8b1af656a9ec031bf19",
+          "id": "b34595551df4b098bd994f2a5aaae595",
           "question": [
-            "Desvío de generación valorizado en USD por año"
+            "Precio spot medio por nodo y año en USD/MWh"
           ],
           "sql": [
-            "SELECT year, round(sum(variance_mwh), 1) AS desvio_mwh, round(sum(variance_value_usd), 0) AS desvio_usd\n",
-            "FROM ${catalog}.gold.mart_generation_vs_budget GROUP BY year ORDER BY year"
+            "SELECT cammesa_node, year(reading_date) AS anio, round(avg(spot_usd_mwh), 2) AS spot_usd\n",
+            "FROM ${catalog}.gold.fact_curtailment_hourly GROUP BY ALL ORDER BY anio, cammesa_node"
           ]
         },
         {
@@ -130,16 +140,6 @@
             "       round(sum(labor_cost_usd), 0) AS mano_obra_usd, round(sum(total_cost_usd), 0) AS total_usd\n",
             "FROM ${catalog}.gold.fact_maintenance_order GROUP BY 1 ORDER BY 1"
           ]
-        },
-        {
-          "id": "b34595551df4b098bd994f2a5aaae595",
-          "question": [
-            "Precio spot medio por nodo y año en USD/MWh"
-          ],
-          "sql": [
-            "SELECT cammesa_node, year(reading_date) AS anio, round(avg(spot_usd_mwh), 2) AS spot_usd\n",
-            "FROM ${catalog}.gold.fact_curtailment_hourly GROUP BY ALL ORDER BY anio, cammesa_node"
-          ]
         }
       ],
       "sql_functions": [
@@ -148,27 +148,41 @@
           "identifier": "${catalog}.gold.fn_explicar_desvio"
         },
         {
-          "id": "9cf20188eff29aa7b00cd3f3049dca9f",
-          "identifier": "${catalog}.gold.fn_perdida_curtailment"
-        },
-        {
           "id": "65de1c92e24a5867fe835f506e080eaa",
           "identifier": "${catalog}.gold.fn_ranking_baterias"
+        },
+        {
+          "id": "9cf20188eff29aa7b00cd3f3049dca9f",
+          "identifier": "${catalog}.gold.fn_perdida_curtailment"
         }
       ]
     },
     "benchmarks": {
       "questions": [
         {
-          "id": "7957361685b932cf9eeeb8845f91cba1",
+          "id": "086117616c111d5f9911813158178bf1",
           "question": [
-            "¿Cuántos MWh se perdieron por curtailment en 2024?"
+            "¿Cuál fue el dólar oficial el 13 de diciembre de 2023?"
           ],
           "answer": [
             {
               "format": "SQL",
               "content": [
-                "SELECT round(sum(lost_curtailment_mwh), 1) FROM ${catalog}.gold.fact_curtailment_hourly WHERE year(reading_date) = 2024"
+                "SELECT fx_ars_usd FROM ${catalog}.gold.dim_date WHERE date = '2023-12-13'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "0c049e198953ac76c52bdfa21a56a328",
+          "question": [
+            "Precio spot medio del nodo Patagonia en 2025 en USD/MWh"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(avg(spot_usd_mwh), 2) FROM ${catalog}.gold.fact_curtailment_hourly WHERE cammesa_node = 'PATAGONIA' AND year(reading_date) = 2025"
               ]
             }
           ]
@@ -188,15 +202,99 @@
           ]
         },
         {
-          "id": "d3687cb38fa87a2fa9ba403202d13ce2",
+          "id": "1d5a1268312ef65ea006038ef910d35c",
           "question": [
-            "¿Qué parque perdió más energía por curtailment en 2025?"
+            "Precio de realización PPA de Cañadón León en julio 2025"
           ],
           "answer": [
             {
               "format": "SQL",
               "content": [
-                "SELECT park_code, round(sum(lost_curtailment_mwh), 1) AS mwh FROM ${catalog}.gold.fact_curtailment_hourly WHERE year(reading_date) = 2025 GROUP BY park_code ORDER BY mwh DESC LIMIT 1"
+                "SELECT ppa_price_usd_mwh FROM ${catalog}.gold.v_park_price_month WHERE park_code = 'LEO' AND month_start = '2025-07-01'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "3cb1eecca3c7b8e91086514ebf4f93db",
+          "question": [
+            "Precio spot medio en horas con curtailment vs sin curtailment en Patagonia"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT has_instruction, round(avg(spot_usd_mwh), 2) FROM ${catalog}.gold.fact_curtailment_hourly WHERE cammesa_node = 'PATAGONIA' GROUP BY has_instruction"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "4b9f4fc0404d5c2ab0257bdf059863f1",
+          "question": [
+            "¿Cuántas horas con orden de CAMMESA tuvo Pico Truncado Alto en 2025?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT count(*) FROM ${catalog}.gold.fact_curtailment_hourly WHERE park_code = 'PIC' AND has_instruction AND year(reading_date) = 2025"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "59fc2b20fd9404550615c1e67f48787b",
+          "question": [
+            "¿Cuál fue el efecto del recurso (viento) en el desvío de Cañadón León en julio 2025?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(resource_effect_mwh, 1) FROM ${catalog}.gold.mart_generation_vs_budget WHERE park_code = 'LEO' AND year_month = '2025-07'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "6c0d608452454135f3fab322e435f2e6",
+          "question": [
+            "¿A qué hora local se pierde más energía por curtailment?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT hour(hour_local) AS hora, round(sum(lost_curtailment_mwh), 1) AS mwh FROM ${catalog}.gold.fact_curtailment_hourly GROUP BY 1 ORDER BY mwh DESC LIMIT 1"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "6c80031ecee61c12266c987f851bfacd",
+          "question": [
+            "Desvío porcentual vs presupuesto de toda la empresa en 2024"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(sum(actual_mwh) / sum(budget_p50_mwh) - 1, 4) FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2024"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "7957361685b932cf9eeeb8845f91cba1",
+          "question": [
+            "¿Cuántos MWh se perdieron por curtailment en 2024?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(sum(lost_curtailment_mwh), 1) FROM ${catalog}.gold.fact_curtailment_hourly WHERE year(reading_date) = 2024"
               ]
             }
           ]
@@ -244,113 +342,15 @@
           ]
         },
         {
-          "id": "f2047a514265d3063a34d58eff8d0e45",
+          "id": "bf03aac067ade292ddc74f8bac028e34",
           "question": [
-            "¿Cuántos años de repago tiene la batería BESS-20x4 en Cañadón León?"
+            "Costo de mantenimiento total en USD en 2023"
           ],
           "answer": [
             {
               "format": "SQL",
               "content": [
-                "SELECT simple_payback_years FROM ${catalog}.gold.fn_ranking_baterias(12) WHERE park_name = 'Cañadón León' AND option_code = 'BESS-20x4'"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "6c0d608452454135f3fab322e435f2e6",
-          "question": [
-            "¿A qué hora local se pierde más energía por curtailment?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT hour(hour_local) AS hora, round(sum(lost_curtailment_mwh), 1) AS mwh FROM ${catalog}.gold.fact_curtailment_hourly GROUP BY 1 ORDER BY mwh DESC LIMIT 1"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "086117616c111d5f9911813158178bf1",
-          "question": [
-            "¿Cuál fue el dólar oficial el 13 de diciembre de 2023?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT fx_ars_usd FROM ${catalog}.gold.dim_date WHERE date = '2023-12-13'"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "0c049e198953ac76c52bdfa21a56a328",
-          "question": [
-            "Precio spot medio del nodo Patagonia en 2025 en USD/MWh"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT round(avg(spot_usd_mwh), 2) FROM ${catalog}.gold.fact_curtailment_hourly WHERE cammesa_node = 'PATAGONIA' AND year(reading_date) = 2025"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "3cb1eecca3c7b8e91086514ebf4f93db",
-          "question": [
-            "Precio spot medio en horas con curtailment vs sin curtailment en Patagonia"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT has_instruction, round(avg(spot_usd_mwh), 2) FROM ${catalog}.gold.fact_curtailment_hourly WHERE cammesa_node = 'PATAGONIA' GROUP BY has_instruction"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "e28edf30dde7e237c60277a9a0ccbd4c",
-          "question": [
-            "Desvío total en MWh vs presupuesto de toda la empresa en 2025"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT round(sum(variance_mwh), 1) FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2025"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "6c80031ecee61c12266c987f851bfacd",
-          "question": [
-            "Desvío porcentual vs presupuesto de toda la empresa en 2024"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT round(sum(actual_mwh) / sum(budget_p50_mwh) - 1, 4) FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2024"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "de5cb6c51818358580439f02c29a5b6c",
-          "question": [
-            "¿Cuánto curtailment asumía el presupuesto 2025 para la Patagonia?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT DISTINCT assumed_curtailment FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2025 AND region = 'PATAGONIA'"
+                "SELECT round(sum(total_cost_usd), 0) FROM ${catalog}.gold.fact_maintenance_order WHERE year(created_date) = 2023"
               ]
             }
           ]
@@ -370,71 +370,29 @@
           ]
         },
         {
-          "id": "bf03aac067ade292ddc74f8bac028e34",
+          "id": "d3687cb38fa87a2fa9ba403202d13ce2",
           "question": [
-            "Costo de mantenimiento total en USD en 2023"
+            "¿Qué parque perdió más energía por curtailment en 2025?"
           ],
           "answer": [
             {
               "format": "SQL",
               "content": [
-                "SELECT round(sum(total_cost_usd), 0) FROM ${catalog}.gold.fact_maintenance_order WHERE year(created_date) = 2023"
+                "SELECT park_code, round(sum(lost_curtailment_mwh), 1) AS mwh FROM ${catalog}.gold.fact_curtailment_hourly WHERE year(reading_date) = 2025 GROUP BY park_code ORDER BY mwh DESC LIMIT 1"
               ]
             }
           ]
         },
         {
-          "id": "1d5a1268312ef65ea006038ef910d35c",
+          "id": "de5cb6c51818358580439f02c29a5b6c",
           "question": [
-            "Precio de realización PPA de Cañadón León en julio 2025"
+            "¿Cuánto curtailment asumía el presupuesto 2025 para la Patagonia?"
           ],
           "answer": [
             {
               "format": "SQL",
               "content": [
-                "SELECT ppa_price_usd_mwh FROM ${catalog}.gold.v_park_price_month WHERE park_code = 'LEO' AND month_start = '2025-07-01'"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "59fc2b20fd9404550615c1e67f48787b",
-          "question": [
-            "¿Cuál fue el efecto del recurso (viento) en el desvío de Cañadón León en julio 2025?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT round(resource_effect_mwh, 1) FROM ${catalog}.gold.mart_generation_vs_budget WHERE park_code = 'LEO' AND year_month = '2025-07'"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "4b9f4fc0404d5c2ab0257bdf059863f1",
-          "question": [
-            "¿Cuántas horas con orden de CAMMESA tuvo Pico Truncado Alto en 2025?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT count(*) FROM ${catalog}.gold.fact_curtailment_hourly WHERE park_code = 'PIC' AND has_instruction AND year(reading_date) = 2025"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "f40caf1789e04718c1da6ddada26b594",
-          "question": [
-            "¿Cuál es el motivo más frecuente de las órdenes de CAMMESA?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT grid_reason, count(*) AS horas FROM ${catalog}.gold.fact_curtailment_hourly WHERE has_instruction GROUP BY grid_reason ORDER BY horas DESC LIMIT 1"
+                "SELECT DISTINCT assumed_curtailment FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2025 AND region = 'PATAGONIA'"
               ]
             }
           ]
@@ -449,6 +407,48 @@
               "format": "SQL",
               "content": [
                 "SELECT round(sum(battery_capex_usd), 0) FROM ${catalog}.gold.fn_ranking_baterias(12) WHERE option_code = 'BESS-10x4'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "e28edf30dde7e237c60277a9a0ccbd4c",
+          "question": [
+            "Desvío total en MWh vs presupuesto de toda la empresa en 2025"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(sum(variance_mwh), 1) FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2025"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "f2047a514265d3063a34d58eff8d0e45",
+          "question": [
+            "¿Cuántos años de repago tiene la batería BESS-20x4 en Cañadón León?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT simple_payback_years FROM ${catalog}.gold.fn_ranking_baterias(12) WHERE park_name = 'Cañadón León' AND option_code = 'BESS-20x4'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "f40caf1789e04718c1da6ddada26b594",
+          "question": [
+            "¿Cuál es el motivo más frecuente de las órdenes de CAMMESA?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT grid_reason, count(*) AS horas FROM ${catalog}.gold.fact_curtailment_hourly WHERE has_instruction GROUP BY grid_reason ORDER BY horas DESC LIMIT 1"
               ]
             }
           ]

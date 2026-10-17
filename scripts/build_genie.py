@@ -51,6 +51,11 @@ def build_space(spec: dict, slug: str) -> dict:
                                       "answer": [{"format": "SQL", "content": _lines(b["sql"])}]}
                                      for b in spec.get("benchmarks", [])]},
     }
+    # la API exige cada lista ordenada por id ("instructions.example_question_sqls must be sorted by id")
+    for section, key in (("config", "sample_questions"), ("instructions", "text_instructions"),
+                         ("instructions", "example_question_sqls"), ("instructions", "sql_functions"),
+                         ("benchmarks", "questions")):
+        space[section][key].sort(key=lambda x: x["id"])
     return space
 
 

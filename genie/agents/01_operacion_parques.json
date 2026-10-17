@@ -14,12 +14,6 @@
           ]
         },
         {
-          "id": "e3547bc48877dd4c45d327579f366917",
-          "question": [
-            "¿Por qué Cañadón León generó menos en julio 2025?"
-          ]
-        },
-        {
           "id": "41b807a81267c6753f60979590bd7a31",
           "question": [
             "¿Qué parques solares conviene limpiar hoy?"
@@ -29,6 +23,12 @@
           "id": "7077f6f4a868f058e07d59f77f59f82c",
           "question": [
             "¿Cuántos MWh perdimos por hielo este invierno?"
+          ]
+        },
+        {
+          "id": "e3547bc48877dd4c45d327579f366917",
+          "question": [
+            "¿Por qué Cañadón León generó menos en julio 2025?"
           ]
         }
       ]
@@ -81,6 +81,52 @@
       ],
       "example_question_sqls": [
         {
+          "id": "09fff9536ee18f27a4ed453413cd96a8",
+          "question": [
+            "Días con hielo en palas por parque en 2025"
+          ],
+          "sql": [
+            "SELECT park_code, count(*) AS dias_con_hielo, round(sum(lost_icing_mwh), 1) AS mwh_perdidos\n",
+            "FROM ${catalog}.gold.v_park_daily\n",
+            "WHERE year(reading_date) = 2025 AND lost_icing_mwh > 0\n",
+            "GROUP BY park_code ORDER BY dias_con_hielo DESC"
+          ]
+        },
+        {
+          "id": "446fabb74f718b903ed1d824063c580f",
+          "question": [
+            "Factor de capacidad mensual de los parques eólicos (metric view)"
+          ],
+          "sql": [
+            "SELECT `Mes`, `Parque`, round(MEASURE(`Factor de capacidad`) * 100, 1) AS factor_capacidad_pct\n",
+            "FROM ${catalog}.gold.mv_generacion\n",
+            "WHERE `Tecnología` = 'Eólico' AND `Año` = 2025\n",
+            "GROUP BY ALL ORDER BY `Mes`, `Parque`"
+          ]
+        },
+        {
+          "id": "81b97f8f175ff4c4e69a14b5ba26e7ea",
+          "question": [
+            "Pérdidas por causa en el año por parque eólico"
+          ],
+          "sql": [
+            "SELECT park_name, round(sum(lost_curtailment_mwh), 1) AS curtailment_mwh, round(sum(lost_fault_mwh), 1) AS fallas_mwh,\n",
+            "       round(sum(lost_maintenance_mwh), 1) AS mantenimiento_mwh, round(sum(lost_icing_mwh), 1) AS hielo_mwh\n",
+            "FROM ${catalog}.gold.v_park_daily\n",
+            "WHERE technology = 'Eólico' AND year(reading_date) = 2025\n",
+            "GROUP BY park_name ORDER BY curtailment_mwh DESC"
+          ]
+        },
+        {
+          "id": "97042a30214eb4961cdcaa0bb43e879a",
+          "question": [
+            "¿Qué parques solares conviene limpiar hoy?"
+          ],
+          "sql": [
+            "SELECT * FROM ${catalog}.gold.fn_recomendacion_limpieza(NULL)"
+          ]
+        },
+        {
           "id": "c7f88ae84fac31b7a347dc838f59c86a",
           "question": [
             "Generación vs presupuesto del último mes por parque"
@@ -101,52 +147,6 @@
           "sql": [
             "SELECT * FROM ${catalog}.gold.fn_explicar_desvio('Cañadón León', '2025-07')"
           ]
-        },
-        {
-          "id": "81b97f8f175ff4c4e69a14b5ba26e7ea",
-          "question": [
-            "Pérdidas por causa en el año por parque eólico"
-          ],
-          "sql": [
-            "SELECT park_name, round(sum(lost_curtailment_mwh), 1) AS curtailment_mwh, round(sum(lost_fault_mwh), 1) AS fallas_mwh,\n",
-            "       round(sum(lost_maintenance_mwh), 1) AS mantenimiento_mwh, round(sum(lost_icing_mwh), 1) AS hielo_mwh\n",
-            "FROM ${catalog}.gold.v_park_daily\n",
-            "WHERE technology = 'Eólico' AND year(reading_date) = 2025\n",
-            "GROUP BY park_name ORDER BY curtailment_mwh DESC"
-          ]
-        },
-        {
-          "id": "446fabb74f718b903ed1d824063c580f",
-          "question": [
-            "Factor de capacidad mensual de los parques eólicos (metric view)"
-          ],
-          "sql": [
-            "SELECT `Mes`, `Parque`, round(MEASURE(`Factor de capacidad`) * 100, 1) AS factor_capacidad_pct\n",
-            "FROM ${catalog}.gold.mv_generacion\n",
-            "WHERE `Tecnología` = 'Eólico' AND `Año` = 2025\n",
-            "GROUP BY ALL ORDER BY `Mes`, `Parque`"
-          ]
-        },
-        {
-          "id": "97042a30214eb4961cdcaa0bb43e879a",
-          "question": [
-            "¿Qué parques solares conviene limpiar hoy?"
-          ],
-          "sql": [
-            "SELECT * FROM ${catalog}.gold.fn_recomendacion_limpieza(NULL)"
-          ]
-        },
-        {
-          "id": "09fff9536ee18f27a4ed453413cd96a8",
-          "question": [
-            "Días con hielo en palas por parque en 2025"
-          ],
-          "sql": [
-            "SELECT park_code, count(*) AS dias_con_hielo, round(sum(lost_icing_mwh), 1) AS mwh_perdidos\n",
-            "FROM ${catalog}.gold.v_park_daily\n",
-            "WHERE year(reading_date) = 2025 AND lost_icing_mwh > 0\n",
-            "GROUP BY park_code ORDER BY dias_con_hielo DESC"
-          ]
         }
       ],
       "sql_functions": [
@@ -155,55 +155,181 @@
           "identifier": "${catalog}.gold.fn_explicar_desvio"
         },
         {
-          "id": "fd46c1c0c4ef76cddd55900eaea8c857",
-          "identifier": "${catalog}.gold.fn_perdida_curtailment"
-        },
-        {
           "id": "b98bd7a117f677eb074fec4826ff94d4",
           "identifier": "${catalog}.gold.fn_recomendacion_limpieza"
+        },
+        {
+          "id": "fd46c1c0c4ef76cddd55900eaea8c857",
+          "identifier": "${catalog}.gold.fn_perdida_curtailment"
         }
       ]
     },
     "benchmarks": {
       "questions": [
         {
-          "id": "ef3bd1588e8b6fda64c076d58000b36e",
+          "id": "091dcbdb82bd8bfc355155092a3dad51",
           "question": [
-            "¿Cuántos parques eólicos tiene la empresa?"
+            "¿Cuánta energía perdió la empresa por curtailment en 2025?"
           ],
           "answer": [
             {
               "format": "SQL",
               "content": [
-                "SELECT count(*) FROM ${catalog}.gold.dim_park WHERE technology = 'Eólico'"
+                "SELECT round(sum(lost_curtailment_mwh), 1) FROM ${catalog}.gold.v_park_daily WHERE year(reading_date) = 2025"
               ]
             }
           ]
         },
         {
-          "id": "c032f6352c84a59b8708de1b40faaba2",
+          "id": "113e1465ffe4d2220426f424eaf00b48",
           "question": [
-            "¿Cuántos parques solares hay y en qué provincias?"
+            "¿Qué parques solares hay que limpiar según el último día?"
           ],
           "answer": [
             {
               "format": "SQL",
               "content": [
-                "SELECT province, count(*) AS parques FROM ${catalog}.gold.dim_park WHERE technology = 'Solar' GROUP BY province"
+                "SELECT park_name, recommendation FROM ${catalog}.gold.fn_recomendacion_limpieza(NULL) WHERE recommendation = 'LIMPIAR'"
               ]
             }
           ]
         },
         {
-          "id": "d3f03f40e55afb55b36d26a10ec86597",
+          "id": "165724239da2582c13754da18f36f6e6",
           "question": [
-            "¿Cuál es el último día con datos?"
+            "¿Qué parque tuvo el peor desvío contra presupuesto en 2025?"
           ],
           "answer": [
             {
               "format": "SQL",
               "content": [
-                "SELECT max(reading_date) FROM ${catalog}.gold.v_park_daily"
+                "SELECT park_name, round(sum(actual_mwh) / sum(budget_p50_mwh) - 1, 4) AS desvio FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2025 GROUP BY park_name ORDER BY desvio LIMIT 1"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "3679184dd7480de717693bda22be1923",
+          "question": [
+            "¿Cuántos MWh se perdieron por hielo en julio 2025 en Cañadón León?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(lost_icing_mwh, 1) FROM ${catalog}.gold.mart_generation_vs_budget WHERE park_code = 'LEO' AND year_month = '2025-07'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "4e77cfe7e5a78c4a800bc827d3280fea",
+          "question": [
+            "¿Cuál es la pérdida por suciedad de Susques Solar en 2025 en MWh?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(sum(soiling_lost_mwh), 1) FROM ${catalog}.gold.mart_panel_cleaning WHERE park_code = 'SUS' AND year(reading_date) = 2025"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "4f9e3b7ac9fa5f62c68a5bcb3c20565b",
+          "question": [
+            "¿Cuál fue el desvío contra presupuesto de Cañadón León en julio 2025?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(variance_pct * 100, 1) AS desvio_pct FROM ${catalog}.gold.mart_generation_vs_budget WHERE park_code = 'LEO' AND year_month = '2025-07'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "6996bf902ccfce0613592f4bb87d0ecf",
+          "question": [
+            "¿Cuántos días hubo nevada en Cañadón León en 2025?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT count(*) FROM ${catalog}.gold.dim_weather WHERE park_code = 'LEO' AND year(date) = 2025 AND weather_condition = 'Nevada'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "74a43d48f5eccf86d7716917507dc491",
+          "question": [
+            "Factor de capacidad de Pico Truncado Alto en 2025"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(sum(generated_mwh) / sum(installed_mw * 24), 4) FROM ${catalog}.gold.v_park_daily WHERE park_code = 'PIC' AND year(reading_date) = 2025"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "763aa4774b50b80e67ad67ba44be239c",
+          "question": [
+            "Generación diaria de Rawson Sur en la última semana con datos"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT reading_date, round(generated_mwh, 1) AS mwh FROM ${catalog}.gold.v_park_daily WHERE park_code = 'RAW' AND reading_date > (SELECT max(reading_date) - 7 FROM ${catalog}.gold.v_park_daily) ORDER BY reading_date"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "8decaba64f60e76d2c6e7935454343a6",
+          "question": [
+            "¿En qué mes de 2025 la empresa generó más?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT year_month, round(sum(generated_mwh), 1) AS mwh FROM ${catalog}.gold.v_park_daily WHERE year(reading_date) = 2025 GROUP BY year_month ORDER BY mwh DESC LIMIT 1"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "8f4935a463b9364736aaa6e9815071b6",
+          "question": [
+            "Suciedad media de los paneles de Abra Pampa en septiembre 2025"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(avg(soiling_loss_pct) * 100, 2) FROM ${catalog}.gold.mart_panel_cleaning WHERE park_code = 'ABR' AND date_format(reading_date, 'yyyy-MM') = '2025-09'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "a84183f9e926d99236ba913a9516cc2a",
+          "question": [
+            "¿Cuál fue el viento medio de Garayalde en julio 2025?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(avg(avg_wind_ms), 2) FROM ${catalog}.gold.v_park_daily WHERE park_code = 'GAR' AND year_month = '2025-07'"
               ]
             }
           ]
@@ -237,15 +363,57 @@
           ]
         },
         {
-          "id": "4f9e3b7ac9fa5f62c68a5bcb3c20565b",
+          "id": "b45a100fedb58162bda6e6d6e8838e4c",
           "question": [
-            "¿Cuál fue el desvío contra presupuesto de Cañadón León en julio 2025?"
+            "¿Cuántos días con condición 'Hielo' tuvo cada parque eólico en invierno 2025?"
           ],
           "answer": [
             {
               "format": "SQL",
               "content": [
-                "SELECT round(variance_pct * 100, 1) AS desvio_pct FROM ${catalog}.gold.mart_generation_vs_budget WHERE park_code = 'LEO' AND year_month = '2025-07'"
+                "SELECT park_code, count(*) FROM ${catalog}.gold.dim_weather WHERE weather_condition = 'Hielo' AND date BETWEEN '2025-06-01' AND '2025-08-31' GROUP BY park_code"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "c032f6352c84a59b8708de1b40faaba2",
+          "question": [
+            "¿Cuántos parques solares hay y en qué provincias?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT province, count(*) AS parques FROM ${catalog}.gold.dim_park WHERE technology = 'Solar' GROUP BY province"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "c05e8bb3a18fcc8c9af9891cba725d83",
+          "question": [
+            "Disponibilidad contractual promedio de Bahía Deseado en 2025"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(avg(availability_contractual), 4) FROM ${catalog}.gold.v_park_daily WHERE park_code = 'DES' AND year(reading_date) = 2025"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "d3f03f40e55afb55b36d26a10ec86597",
+          "question": [
+            "¿Cuál es el último día con datos?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT max(reading_date) FROM ${catalog}.gold.v_park_daily"
               ]
             }
           ]
@@ -265,146 +433,6 @@
           ]
         },
         {
-          "id": "3679184dd7480de717693bda22be1923",
-          "question": [
-            "¿Cuántos MWh se perdieron por hielo en julio 2025 en Cañadón León?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT round(lost_icing_mwh, 1) FROM ${catalog}.gold.mart_generation_vs_budget WHERE park_code = 'LEO' AND year_month = '2025-07'"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "165724239da2582c13754da18f36f6e6",
-          "question": [
-            "¿Qué parque tuvo el peor desvío contra presupuesto en 2025?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT park_name, round(sum(actual_mwh) / sum(budget_p50_mwh) - 1, 4) AS desvio FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2025 GROUP BY park_name ORDER BY desvio LIMIT 1"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "74a43d48f5eccf86d7716917507dc491",
-          "question": [
-            "Factor de capacidad de Pico Truncado Alto en 2025"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT round(sum(generated_mwh) / sum(installed_mw * 24), 4) FROM ${catalog}.gold.v_park_daily WHERE park_code = 'PIC' AND year(reading_date) = 2025"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "8decaba64f60e76d2c6e7935454343a6",
-          "question": [
-            "¿En qué mes de 2025 la empresa generó más?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT year_month, round(sum(generated_mwh), 1) AS mwh FROM ${catalog}.gold.v_park_daily WHERE year(reading_date) = 2025 GROUP BY year_month ORDER BY mwh DESC LIMIT 1"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "6996bf902ccfce0613592f4bb87d0ecf",
-          "question": [
-            "¿Cuántos días hubo nevada en Cañadón León en 2025?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT count(*) FROM ${catalog}.gold.dim_weather WHERE park_code = 'LEO' AND year(date) = 2025 AND weather_condition = 'Nevada'"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "4e77cfe7e5a78c4a800bc827d3280fea",
-          "question": [
-            "¿Cuál es la pérdida por suciedad de Susques Solar en 2025 en MWh?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT round(sum(soiling_lost_mwh), 1) FROM ${catalog}.gold.mart_panel_cleaning WHERE park_code = 'SUS' AND year(reading_date) = 2025"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "f45ec4d84f9458df3834d8f320496a05",
-          "question": [
-            "¿Cuántas limpiezas de paneles se hicieron en 2025 por parque?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT park_code, count(DISTINCT last_cleaning_date) AS limpiezas FROM ${catalog}.gold.mart_panel_cleaning WHERE year(last_cleaning_date) = 2025 GROUP BY park_code"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "113e1465ffe4d2220426f424eaf00b48",
-          "question": [
-            "¿Qué parques solares hay que limpiar según el último día?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT park_name, recommendation FROM ${catalog}.gold.fn_recomendacion_limpieza(NULL) WHERE recommendation = 'LIMPIAR'"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "8f4935a463b9364736aaa6e9815071b6",
-          "question": [
-            "Suciedad media de los paneles de Abra Pampa en septiembre 2025"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT round(avg(soiling_loss_pct) * 100, 2) FROM ${catalog}.gold.mart_panel_cleaning WHERE park_code = 'ABR' AND date_format(reading_date, 'yyyy-MM') = '2025-09'"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "091dcbdb82bd8bfc355155092a3dad51",
-          "question": [
-            "¿Cuánta energía perdió la empresa por curtailment en 2025?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT round(sum(lost_curtailment_mwh), 1) FROM ${catalog}.gold.v_park_daily WHERE year(reading_date) = 2025"
-              ]
-            }
-          ]
-        },
-        {
           "id": "e9b22af175e3ffe636ed0c3c903da130",
           "question": [
             "¿Qué parque eólico tuvo más pérdidas por fallas en 2025?"
@@ -419,57 +447,29 @@
           ]
         },
         {
-          "id": "763aa4774b50b80e67ad67ba44be239c",
+          "id": "ef3bd1588e8b6fda64c076d58000b36e",
           "question": [
-            "Generación diaria de Rawson Sur en la última semana con datos"
+            "¿Cuántos parques eólicos tiene la empresa?"
           ],
           "answer": [
             {
               "format": "SQL",
               "content": [
-                "SELECT reading_date, round(generated_mwh, 1) AS mwh FROM ${catalog}.gold.v_park_daily WHERE park_code = 'RAW' AND reading_date > (SELECT max(reading_date) - 7 FROM ${catalog}.gold.v_park_daily) ORDER BY reading_date"
+                "SELECT count(*) FROM ${catalog}.gold.dim_park WHERE technology = 'Eólico'"
               ]
             }
           ]
         },
         {
-          "id": "a84183f9e926d99236ba913a9516cc2a",
+          "id": "f45ec4d84f9458df3834d8f320496a05",
           "question": [
-            "¿Cuál fue el viento medio de Garayalde en julio 2025?"
+            "¿Cuántas limpiezas de paneles se hicieron en 2025 por parque?"
           ],
           "answer": [
             {
               "format": "SQL",
               "content": [
-                "SELECT round(avg(avg_wind_ms), 2) FROM ${catalog}.gold.v_park_daily WHERE park_code = 'GAR' AND year_month = '2025-07'"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "b45a100fedb58162bda6e6d6e8838e4c",
-          "question": [
-            "¿Cuántos días con condición 'Hielo' tuvo cada parque eólico en invierno 2025?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT park_code, count(*) FROM ${catalog}.gold.dim_weather WHERE weather_condition = 'Hielo' AND date BETWEEN '2025-06-01' AND '2025-08-31' GROUP BY park_code"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "c05e8bb3a18fcc8c9af9891cba725d83",
-          "question": [
-            "Disponibilidad contractual promedio de Bahía Deseado en 2025"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT round(avg(availability_contractual), 4) FROM ${catalog}.gold.v_park_daily WHERE park_code = 'DES' AND year(reading_date) = 2025"
+                "SELECT park_code, count(DISTINCT last_cleaning_date) AS limpiezas FROM ${catalog}.gold.mart_panel_cleaning WHERE year(last_cleaning_date) = 2025 GROUP BY park_code"
               ]
             }
           ]

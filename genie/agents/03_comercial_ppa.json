@@ -8,15 +8,15 @@
     "config": {
       "sample_questions": [
         {
-          "id": "c4eb83759e0caaa8c8cc42e88491e9c1",
-          "question": [
-            "¿Vamos a llegar al volumen comprometido este mes con cada cliente?"
-          ]
-        },
-        {
           "id": "150eaae50aaa3e8e63e5e30eb2d64e3d",
           "question": [
             "¿Qué contrato tuvo más penalidades en 2025?"
+          ]
+        },
+        {
+          "id": "c4eb83759e0caaa8c8cc42e88491e9c1",
+          "question": [
+            "¿Vamos a llegar al volumen comprometido este mes con cada cliente?"
           ]
         },
         {
@@ -73,15 +73,6 @@
       ],
       "example_question_sqls": [
         {
-          "id": "5ef180295a5c33a4864995f99034da93",
-          "question": [
-            "¿Vamos a llegar al volumen comprometido este mes?"
-          ],
-          "sql": [
-            "SELECT client_name, projected_compliance_pct, projected_shortfall_mwh, recommendation FROM ${catalog}.gold.fn_proyeccion_ppa(NULL) ORDER BY projected_compliance_pct"
-          ]
-        },
-        {
           "id": "16feba92d294c2c9874cf4fc5e812a4f",
           "question": [
             "Cumplimiento anual por cliente"
@@ -93,16 +84,6 @@
           ]
         },
         {
-          "id": "6f27fd609f1625380fef18dbae4343c6",
-          "question": [
-            "Faltantes por mes del data center y qué convenía hacer"
-          ],
-          "sql": [
-            "SELECT year_month, shortfall_mwh, penalty_cost_usd, spot_cover_cost_usd, best_option\n",
-            "FROM ${catalog}.gold.fact_ppa_settlement WHERE client_name ILIKE '%data center%' AND shortfall_mwh > 0 ORDER BY year_month"
-          ]
-        },
-        {
           "id": "46b10f969a9015007b246ec79bcd8e93",
           "question": [
             "Historia de precio de un contrato (adendas)"
@@ -110,6 +91,25 @@
           "sql": [
             "SELECT contract_id, version, effective_from, price_usd_mwh, committed_mwh_month, status\n",
             "FROM ${catalog}.gold.dim_contract WHERE client_name ILIKE '%aluminios%' ORDER BY version"
+          ]
+        },
+        {
+          "id": "5ef180295a5c33a4864995f99034da93",
+          "question": [
+            "¿Vamos a llegar al volumen comprometido este mes?"
+          ],
+          "sql": [
+            "SELECT client_name, projected_compliance_pct, projected_shortfall_mwh, recommendation FROM ${catalog}.gold.fn_proyeccion_ppa(NULL) ORDER BY projected_compliance_pct"
+          ]
+        },
+        {
+          "id": "6f27fd609f1625380fef18dbae4343c6",
+          "question": [
+            "Faltantes por mes del data center y qué convenía hacer"
+          ],
+          "sql": [
+            "SELECT year_month, shortfall_mwh, penalty_cost_usd, spot_cover_cost_usd, best_option\n",
+            "FROM ${catalog}.gold.fact_ppa_settlement WHERE client_name ILIKE '%data center%' AND shortfall_mwh > 0 ORDER BY year_month"
           ]
         },
         {
@@ -133,146 +133,6 @@
     "benchmarks": {
       "questions": [
         {
-          "id": "edbb561051f6330f0beaba75aa51571d",
-          "question": [
-            "¿Cuántos contratos PPA vigentes hay?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT count(*) FROM ${catalog}.gold.dim_contract WHERE is_current AND NOT is_deleted AND contract_key <> -1 AND status = 'VIGENTE'"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "2b11ce75bc85e99b12ba6281c7293f54",
-          "question": [
-            "¿Qué cliente tiene el precio PPA más alto?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT client_name, price_usd_mwh FROM ${catalog}.gold.dim_contract WHERE is_current AND contract_key <> -1 ORDER BY price_usd_mwh DESC LIMIT 1"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "ef852b95871ed326da311f1d880b9b98",
-          "question": [
-            "¿Qué contrato se rescindió?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT DISTINCT contract_id, client_name FROM ${catalog}.gold.dim_contract WHERE status = 'RESCINDIDO'"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "dba5748b501a67d13aeb65bf2d85878f",
-          "question": [
-            "¿Qué contrato empezó en 2025?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT DISTINCT contract_id, client_name FROM ${catalog}.gold.dim_contract WHERE year(start_date) = 2025"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "50125f7d52ffb80410b52a93ced07b65",
-          "question": [
-            "¿Cuál fue el cumplimiento total de la cartera en 2025?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT round(sum(delivered_mwh) / sum(committed_mwh), 4) FROM ${catalog}.gold.fact_ppa_settlement WHERE year(month_start) = 2025"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "fe93f844f2bf7adc56d46549d40d719d",
-          "question": [
-            "¿Qué cliente tuvo el peor cumplimiento en 2025?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT client_name, round(sum(delivered_mwh) / sum(committed_mwh), 4) AS c FROM ${catalog}.gold.fact_ppa_settlement WHERE year(month_start) = 2025 GROUP BY client_name ORDER BY c LIMIT 1"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "1e7669b5ac1a01ca668417d373a36075",
-          "question": [
-            "¿Cuántos meses tuvo faltante el contrato del Data Center Austral?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT count(*) FROM ${catalog}.gold.fact_ppa_settlement WHERE contract_id = 'PPA-2023-007' AND shortfall_mwh > 0"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "b28042d5883d464b9c9b4d18f99c19d6",
-          "question": [
-            "¿Cuánto hubiera costado cubrir todos los faltantes de 2025 con la mejor opción?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT round(sum(best_option_cost_usd), 0) FROM ${catalog}.gold.fact_ppa_settlement WHERE year(month_start) = 2025"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "22893d17b4339152f5399231e0641f23",
-          "question": [
-            "¿En cuántos casos convenía comprar en el spot en vez de pagar la penalidad?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT count(*) FROM ${catalog}.gold.fact_ppa_settlement WHERE best_option = 'COMPRAR_SPOT'"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "5403f9dd0e5bb81281d549dbb14b59af",
-          "question": [
-            "¿Cuánto MWh entregamos a Litio de la Puna en 2025?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT round(sum(delivered_mwh), 1) FROM ${catalog}.gold.fact_ppa_settlement WHERE client_name ILIKE '%litio%' AND year(month_start) = 2025"
-              ]
-            }
-          ]
-        },
-        {
           "id": "1a34ea21cb6ee770cddb3243b45a4012",
           "question": [
             "¿Cuáles son los parques de origen del contrato del data center?"
@@ -282,34 +142,6 @@
               "format": "SQL",
               "content": [
                 "SELECT source_parks FROM ${catalog}.gold.dim_contract WHERE contract_id = 'PPA-2023-007' AND is_current"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "dbc5070850e7a0ac1b06daec63d1e7de",
-          "question": [
-            "¿Cuántas versiones tiene el contrato PPA-2023-007?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT count(*) FROM ${catalog}.gold.dim_contract WHERE contract_id = 'PPA-2023-007'"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "d9301fb7ded72f85576d3b005465b9a3",
-          "question": [
-            "¿Cuánto subió el volumen comprometido del data center con la adenda de 2024?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT max(committed_mwh_month) - min(committed_mwh_month) FROM ${catalog}.gold.dim_contract WHERE contract_id = 'PPA-2023-007'"
               ]
             }
           ]
@@ -329,29 +161,57 @@
           ]
         },
         {
-          "id": "6dc765c5ef275f683f85c13b66ba6f4d",
+          "id": "1e7669b5ac1a01ca668417d373a36075",
           "question": [
-            "Ingresos PPA totales en 2025 en USD"
+            "¿Cuántos meses tuvo faltante el contrato del Data Center Austral?"
           ],
           "answer": [
             {
               "format": "SQL",
               "content": [
-                "SELECT round(sum(revenue_usd), 0) FROM ${catalog}.gold.fact_ppa_settlement WHERE year(month_start) = 2025"
+                "SELECT count(*) FROM ${catalog}.gold.fact_ppa_settlement WHERE contract_id = 'PPA-2023-007' AND shortfall_mwh > 0"
               ]
             }
           ]
         },
         {
-          "id": "dc01a1d3aac4b340cdad3e965f733225",
+          "id": "22893d17b4339152f5399231e0641f23",
           "question": [
-            "¿Qué recomendación hay hoy para el contrato del Data Center Austral?"
+            "¿En cuántos casos convenía comprar en el spot en vez de pagar la penalidad?"
           ],
           "answer": [
             {
               "format": "SQL",
               "content": [
-                "SELECT recommendation FROM ${catalog}.gold.fn_proyeccion_ppa('PPA-2023-007')"
+                "SELECT count(*) FROM ${catalog}.gold.fact_ppa_settlement WHERE best_option = 'COMPRAR_SPOT'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "28b1d18632dcd8dacc09637f46531623",
+          "question": [
+            "¿Cuántos clientes son del sector Minería?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT count(DISTINCT contract_id) FROM ${catalog}.gold.dim_contract WHERE sector = 'Minería'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "2b11ce75bc85e99b12ba6281c7293f54",
+          "question": [
+            "¿Qué cliente tiene el precio PPA más alto?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT client_name, price_usd_mwh FROM ${catalog}.gold.dim_contract WHERE is_current AND contract_key <> -1 ORDER BY price_usd_mwh DESC LIMIT 1"
               ]
             }
           ]
@@ -385,6 +245,48 @@
           ]
         },
         {
+          "id": "50125f7d52ffb80410b52a93ced07b65",
+          "question": [
+            "¿Cuál fue el cumplimiento total de la cartera en 2025?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(sum(delivered_mwh) / sum(committed_mwh), 4) FROM ${catalog}.gold.fact_ppa_settlement WHERE year(month_start) = 2025"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "5403f9dd0e5bb81281d549dbb14b59af",
+          "question": [
+            "¿Cuánto MWh entregamos a Litio de la Puna en 2025?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(sum(delivered_mwh), 1) FROM ${catalog}.gold.fact_ppa_settlement WHERE client_name ILIKE '%litio%' AND year(month_start) = 2025"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "6dc765c5ef275f683f85c13b66ba6f4d",
+          "question": [
+            "Ingresos PPA totales en 2025 en USD"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(sum(revenue_usd), 0) FROM ${catalog}.gold.fact_ppa_settlement WHERE year(month_start) = 2025"
+              ]
+            }
+          ]
+        },
+        {
           "id": "83f76d457401c1dd1139d86bcc2c9ede",
           "question": [
             "¿Cuál fue el mes con más penalidades (mejor opción) en toda la historia?"
@@ -394,6 +296,76 @@
               "format": "SQL",
               "content": [
                 "SELECT year_month, round(sum(best_option_cost_usd), 0) AS usd FROM ${catalog}.gold.fact_ppa_settlement GROUP BY year_month ORDER BY usd DESC LIMIT 1"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "b28042d5883d464b9c9b4d18f99c19d6",
+          "question": [
+            "¿Cuánto hubiera costado cubrir todos los faltantes de 2025 con la mejor opción?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(sum(best_option_cost_usd), 0) FROM ${catalog}.gold.fact_ppa_settlement WHERE year(month_start) = 2025"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "d9301fb7ded72f85576d3b005465b9a3",
+          "question": [
+            "¿Cuánto subió el volumen comprometido del data center con la adenda de 2024?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT max(committed_mwh_month) - min(committed_mwh_month) FROM ${catalog}.gold.dim_contract WHERE contract_id = 'PPA-2023-007'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "dba5748b501a67d13aeb65bf2d85878f",
+          "question": [
+            "¿Qué contrato empezó en 2025?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT DISTINCT contract_id, client_name FROM ${catalog}.gold.dim_contract WHERE year(start_date) = 2025"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "dbc5070850e7a0ac1b06daec63d1e7de",
+          "question": [
+            "¿Cuántas versiones tiene el contrato PPA-2023-007?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT count(*) FROM ${catalog}.gold.dim_contract WHERE contract_id = 'PPA-2023-007'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "dc01a1d3aac4b340cdad3e965f733225",
+          "question": [
+            "¿Qué recomendación hay hoy para el contrato del Data Center Austral?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT recommendation FROM ${catalog}.gold.fn_proyeccion_ppa('PPA-2023-007')"
               ]
             }
           ]
@@ -413,15 +385,43 @@
           ]
         },
         {
-          "id": "28b1d18632dcd8dacc09637f46531623",
+          "id": "edbb561051f6330f0beaba75aa51571d",
           "question": [
-            "¿Cuántos clientes son del sector Minería?"
+            "¿Cuántos contratos PPA vigentes hay?"
           ],
           "answer": [
             {
               "format": "SQL",
               "content": [
-                "SELECT count(DISTINCT contract_id) FROM ${catalog}.gold.dim_contract WHERE sector = 'Minería'"
+                "SELECT count(*) FROM ${catalog}.gold.dim_contract WHERE is_current AND NOT is_deleted AND contract_key <> -1 AND status = 'VIGENTE'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ef852b95871ed326da311f1d880b9b98",
+          "question": [
+            "¿Qué contrato se rescindió?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT DISTINCT contract_id, client_name FROM ${catalog}.gold.dim_contract WHERE status = 'RESCINDIDO'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "fe93f844f2bf7adc56d46549d40d719d",
+          "question": [
+            "¿Qué cliente tuvo el peor cumplimiento en 2025?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT client_name, round(sum(delivered_mwh) / sum(committed_mwh), 4) AS c FROM ${catalog}.gold.fact_ppa_settlement WHERE year(month_start) = 2025 GROUP BY client_name ORDER BY c LIMIT 1"
               ]
             }
           ]
