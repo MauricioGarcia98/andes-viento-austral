@@ -57,3 +57,10 @@ def ensure_ops_tables(spark: SparkSession, cfg: ProjectConfig) -> None:
         full = cfg.table("ops", name)
         if not spark.catalog.tableExists(full):
             spark.createDataFrame([], schema).write.format("delta").saveAsTable(full)
+
+
+def drop_layers(spark: SparkSession, cfg: ProjectConfig) -> None:
+    """Borra bronze, silver, gold y ops (NO el volumen de landing). Para un full refresh."""
+    for layer in ("bronze", "silver", "gold", "ops"):
+        spark.sql(f"DROP SCHEMA IF EXISTS {cfg.schema(layer)} CASCADE")
+        print("borrado", cfg.schema(layer))

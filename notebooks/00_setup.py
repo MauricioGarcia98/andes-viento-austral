@@ -16,7 +16,20 @@
 
 # COMMAND ----------
 
-from andes_viento.setup import create_namespace
+dbutils.widgets.dropdown("full_refresh", "false", ["false", "true"], "Full refresh (borra todo)")
+full_refresh = dbutils.widgets.get("full_refresh") == "true"
+
+from andes_viento.setup import create_namespace, drop_layers
+
+if full_refresh:
+    # Reset completo: tablas + checkpoints + esquemas inferidos de Auto Loader. Sin esto, regenerar
+    # landing no sirve: Auto Loader IGNORA archivos sobrescritos en la misma ruta (allowOverwrites=false).
+    drop_layers(spark, cfg)
+    for d in ("_checkpoints", "_schemas"):
+        try:
+            dbutils.fs.rm(f"{cfg.root_path}/{d}", True)
+        except Exception as exc:
+            print(d, "no existía:", str(exc)[:80])
 
 create_namespace(spark, cfg)
 

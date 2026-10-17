@@ -1,0 +1,229 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 560" width="1240" height="560" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="Ejecución animada del job andes-viento-e2e">
+  <!-- Generado por docs/diagrams/src/build_job_svg.py · ilustración del run (no es una captura real) -->
+  <defs>
+    <pattern id="grid" width="18" height="18" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="#2a323c"/></pattern>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="#4b5663"/></marker>
+    <linearGradient id="bronze" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#e09a5a"/><stop offset="1" stop-color="#a8642a"/></linearGradient>
+    <linearGradient id="silver" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#d9dee3"/><stop offset="1" stop-color="#8e979f"/></linearGradient>
+    <linearGradient id="gold" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#f7d774"/><stop offset="1" stop-color="#c99a1a"/></linearGradient>
+    <filter id="sh" x="-10%" y="-20%" width="120%" height="160%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity=".45"/></filter>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <style>
+    .txt{fill:#e6edf3} .mut{fill:#8b949e} .dim{fill:#6e7681}
+    .t{fill:#e6edf3;font-size:12.5px;font-weight:600}
+    .s{fill:#8b949e;font-size:10px}
+    .xs{fill:#8b949e;font-size:8.5px}
+    .lbl{font-size:9.5px;font-weight:700;letter-spacing:1.2px}
+    .mono{font-family:'SFMono-Regular',Consolas,'Liberation Mono',monospace}
+    .edge{stroke:#3b444f;stroke-width:1.5;fill:none}
+    .flow{stroke:#4c9aff;stroke-width:2.2;fill:none;stroke-dasharray:5 7;opacity:0;filter:url(#glow)}
+    .cy{animation-duration:18s;animation-iteration-count:infinite;animation-timing-function:steps(1,end)}
+    .ring{transform-box:fill-box;transform-origin:center}
+    .spin{transform-box:fill-box;transform-origin:center;animation:rot .9s linear infinite}
+    .bar{transform-box:fill-box;transform-origin:left center;animation:bar 18s linear infinite}
+    @keyframes rot{to{transform:rotate(360deg)}}
+    @keyframes march{to{stroke-dashoffset:-48}}
+    @keyframes e0{0.00%{opacity:0} 13.00%{opacity:1} 23.00%{opacity:0}}
+    .fl0{animation:e0 18s steps(1,end) infinite, march .8s linear infinite}
+    @keyframes e1{0.00%{opacity:0} 23.00%{opacity:1} 33.00%{opacity:0}}
+    .fl1{animation:e1 18s steps(1,end) infinite, march .8s linear infinite}
+    @keyframes e2{0.00%{opacity:0} 33.00%{opacity:1} 43.00%{opacity:0}}
+    .fl2{animation:e2 18s steps(1,end) infinite, march .8s linear infinite}
+    @keyframes e3{0.00%{opacity:0} 43.00%{opacity:1} 53.00%{opacity:0}}
+    .fl3{animation:e3 18s steps(1,end) infinite, march .8s linear infinite}
+    @keyframes e4{0.00%{opacity:0} 53.00%{opacity:1} 63.00%{opacity:0}}
+    .fl4{animation:e4 18s steps(1,end) infinite, march .8s linear infinite}
+    @keyframes e5{0.00%{opacity:0} 63.00%{opacity:1} 73.00%{opacity:0}}
+    .fl5{animation:e5 18s steps(1,end) infinite, march .8s linear infinite}
+    @keyframes e6{0.00%{opacity:0} 73.00%{opacity:1} 83.00%{opacity:0}}
+    .fl6{animation:e6 18s steps(1,end) infinite, march .8s linear infinite}
+    @keyframes d0{0.00%{fill:#3b444f} 3.00%{fill:#4c9aff} 13.00%{fill:#3fb950} 95.00%{fill:#3b444f}}
+    @keyframes b0{0.00%{stroke:#30363d} 3.00%{stroke:#4c9aff} 13.00%{stroke:#30363d}}
+    @keyframes sp0{0.00%{opacity:0} 3.00%{opacity:1} 13.00%{opacity:0}}
+    .k0 .dot{animation-name:d0} .k0 .card{animation-name:b0} .k0 .ring{animation:sp0 18s steps(1,end) infinite, rot .9s linear infinite}
+    @keyframes d1{0.00%{fill:#3b444f} 13.00%{fill:#4c9aff} 23.00%{fill:#3fb950} 95.00%{fill:#3b444f}}
+    @keyframes b1{0.00%{stroke:#30363d} 13.00%{stroke:#4c9aff} 23.00%{stroke:#30363d}}
+    @keyframes sp1{0.00%{opacity:0} 13.00%{opacity:1} 23.00%{opacity:0}}
+    .k1 .dot{animation-name:d1} .k1 .card{animation-name:b1} .k1 .ring{animation:sp1 18s steps(1,end) infinite, rot .9s linear infinite}
+    @keyframes d2{0.00%{fill:#3b444f} 23.00%{fill:#4c9aff} 33.00%{fill:#3fb950} 95.00%{fill:#3b444f}}
+    @keyframes b2{0.00%{stroke:#30363d} 23.00%{stroke:#4c9aff} 33.00%{stroke:#30363d}}
+    @keyframes sp2{0.00%{opacity:0} 23.00%{opacity:1} 33.00%{opacity:0}}
+    .k2 .dot{animation-name:d2} .k2 .card{animation-name:b2} .k2 .ring{animation:sp2 18s steps(1,end) infinite, rot .9s linear infinite}
+    @keyframes d3{0.00%{fill:#3b444f} 33.00%{fill:#4c9aff} 43.00%{fill:#3fb950} 95.00%{fill:#3b444f}}
+    @keyframes b3{0.00%{stroke:#30363d} 33.00%{stroke:#4c9aff} 43.00%{stroke:#30363d}}
+    @keyframes sp3{0.00%{opacity:0} 33.00%{opacity:1} 43.00%{opacity:0}}
+    .k3 .dot{animation-name:d3} .k3 .card{animation-name:b3} .k3 .ring{animation:sp3 18s steps(1,end) infinite, rot .9s linear infinite}
+    @keyframes it0{0.00%{fill:#3b444f} 33.00%{fill:#4c9aff} 36.50%{fill:#3fb950} 95.00%{fill:#3b444f}}
+    @keyframes it1{0.00%{fill:#3b444f} 33.60%{fill:#4c9aff} 37.00%{fill:#3fb950} 95.00%{fill:#3b444f}}
+    @keyframes it2{0.00%{fill:#3b444f} 34.20%{fill:#4c9aff} 37.50%{fill:#3fb950} 95.00%{fill:#3b444f}}
+    @keyframes it3{0.00%{fill:#3b444f} 34.80%{fill:#4c9aff} 38.00%{fill:#3fb950} 95.00%{fill:#3b444f}}
+    @keyframes it4{0.00%{fill:#3b444f} 38.00%{fill:#4c9aff} 41.50%{fill:#3fb950} 95.00%{fill:#3b444f}}
+    @keyframes it5{0.00%{fill:#3b444f} 38.60%{fill:#4c9aff} 42.00%{fill:#3fb950} 95.00%{fill:#3b444f}}
+    @keyframes it6{0.00%{fill:#3b444f} 39.20%{fill:#4c9aff} 42.50%{fill:#3fb950} 95.00%{fill:#3b444f}}
+    @keyframes it7{0.00%{fill:#3b444f} 39.80%{fill:#4c9aff} 43.00%{fill:#3fb950} 95.00%{fill:#3b444f}}
+    @keyframes d4{0.00%{fill:#3b444f} 43.00%{fill:#4c9aff} 53.00%{fill:#3fb950} 95.00%{fill:#3b444f}}
+    @keyframes b4{0.00%{stroke:#30363d} 43.00%{stroke:#4c9aff} 53.00%{stroke:#30363d}}
+    @keyframes sp4{0.00%{opacity:0} 43.00%{opacity:1} 53.00%{opacity:0}}
+    .k4 .dot{animation-name:d4} .k4 .card{animation-name:b4} .k4 .ring{animation:sp4 18s steps(1,end) infinite, rot .9s linear infinite}
+    @keyframes d5{0.00%{fill:#3b444f} 53.00%{fill:#4c9aff} 63.00%{fill:#3fb950} 95.00%{fill:#3b444f}}
+    @keyframes b5{0.00%{stroke:#30363d} 53.00%{stroke:#4c9aff} 63.00%{stroke:#30363d}}
+    @keyframes sp5{0.00%{opacity:0} 53.00%{opacity:1} 63.00%{opacity:0}}
+    .k5 .dot{animation-name:d5} .k5 .card{animation-name:b5} .k5 .ring{animation:sp5 18s steps(1,end) infinite, rot .9s linear infinite}
+    @keyframes d6{0.00%{fill:#3b444f} 63.00%{fill:#4c9aff} 73.00%{fill:#3fb950} 95.00%{fill:#3b444f}}
+    @keyframes b6{0.00%{stroke:#30363d} 63.00%{stroke:#4c9aff} 73.00%{stroke:#30363d}}
+    @keyframes sp6{0.00%{opacity:0} 63.00%{opacity:1} 73.00%{opacity:0}}
+    .k6 .dot{animation-name:d6} .k6 .card{animation-name:b6} .k6 .ring{animation:sp6 18s steps(1,end) infinite, rot .9s linear infinite}
+    @keyframes d7{0.00%{fill:#3b444f} 73.00%{fill:#4c9aff} 83.00%{fill:#3fb950} 95.00%{fill:#3b444f}}
+    @keyframes b7{0.00%{stroke:#30363d} 73.00%{stroke:#4c9aff} 83.00%{stroke:#30363d}}
+    @keyframes sp7{0.00%{opacity:0} 73.00%{opacity:1} 83.00%{opacity:0}}
+    .k7 .dot{animation-name:d7} .k7 .card{animation-name:b7} .k7 .ring{animation:sp7 18s steps(1,end) infinite, rot .9s linear infinite}
+    @keyframes lg0{0.00%{opacity:0} 13.00%{opacity:1} 95.00%{opacity:0}}
+    @keyframes lg1{0.00%{opacity:0} 23.00%{opacity:1} 95.00%{opacity:0}}
+    @keyframes lg2{0.00%{opacity:0} 33.00%{opacity:1} 95.00%{opacity:0}}
+    @keyframes lg3{0.00%{opacity:0} 43.00%{opacity:1} 95.00%{opacity:0}}
+    @keyframes lg4{0.00%{opacity:0} 53.00%{opacity:1} 95.00%{opacity:0}}
+    @keyframes lg5{0.00%{opacity:0} 63.00%{opacity:1} 95.00%{opacity:0}}
+    @keyframes lg6{0.00%{opacity:0} 73.00%{opacity:1} 95.00%{opacity:0}}
+    @keyframes lg7{0.00%{opacity:0} 83.00%{opacity:1} 95.00%{opacity:0}}
+    @keyframes run{0.00%{opacity:1} 83.00%{opacity:0} 95.00%{opacity:1}}
+    @keyframes ok{0.00%{opacity:0} 83.00%{opacity:1} 95.00%{opacity:0}}
+    @keyframes bar{0.00%{transform:scaleX(0)} 3.00%{transform:scaleX(0)} 83.00%{transform:scaleX(1)} 95.00%{transform:scaleX(1)} 95.10%{transform:scaleX(0)}}
+    @keyframes newcell{0.00%{fill:#21262d} 83.00%{fill:#3fb950}}
+    @keyframes cA{0.00%{opacity:0} 33.00%{opacity:1} 95.00%{opacity:0}}
+    @keyframes cB{0.00%{opacity:0} 43.00%{opacity:1} 95.00%{opacity:0}}
+    @keyframes cC{0.00%{opacity:0} 63.00%{opacity:1} 95.00%{opacity:0}}
+    @keyframes cD{0.00%{opacity:0} 73.00%{opacity:1} 95.00%{opacity:0}}
+    @keyframes cE{0.00%{opacity:0} 83.00%{opacity:1} 95.00%{opacity:0}}
+    @keyframes cnt0{0.00%{opacity:0} 0.00%{opacity:1} 13.00%{opacity:0}}
+    @keyframes cnt1{0.00%{opacity:0} 13.00%{opacity:1} 23.00%{opacity:0}}
+    @keyframes cnt2{0.00%{opacity:0} 23.00%{opacity:1} 33.00%{opacity:0}}
+    @keyframes cnt3{0.00%{opacity:0} 33.00%{opacity:1} 43.00%{opacity:0}}
+    @keyframes cnt4{0.00%{opacity:0} 43.00%{opacity:1} 53.00%{opacity:0}}
+    @keyframes cnt5{0.00%{opacity:0} 53.00%{opacity:1} 63.00%{opacity:0}}
+    @keyframes cnt6{0.00%{opacity:0} 63.00%{opacity:1} 73.00%{opacity:0}}
+    @keyframes cnt7{0.00%{opacity:0} 73.00%{opacity:1} 83.00%{opacity:0}}
+    @keyframes cnt8{0.00%{opacity:0} 83.00%{opacity:1} 95.00%{opacity:0}}
+  </style>
+
+  <!-- ventana -->
+  <rect width="1240" height="560" rx="12" fill="#0d1117"/>
+  <rect x=".5" y=".5" width="1239" height="559" rx="12" fill="none" stroke="#30363d"/>
+  <path d="M12 .5 H1228 A11.5 11.5 0 0 1 1239.5 12 V40 H.5 V12 A11.5 11.5 0 0 1 12 .5z" fill="#161b22"/>
+  <line x1="0" y1="40" x2="1240" y2="40" stroke="#30363d"/>
+  <circle cx="20" cy="20" r="5" fill="#ff5f57"/><circle cx="36" cy="20" r="5" fill="#febc2e"/><circle cx="52" cy="20" r="5" fill="#28c840"/>
+  <g transform="translate(78,11)"><path d="M9 0 L18 5 L9 10 L0 5z" fill="#ff3621"/><path d="M0 8.5 L9 13.5 L18 8.5 L18 11.5 L9 16.5 L0 11.5z" fill="#ff3621" opacity=".8"/></g>
+  <text x="104" y="25" font-size="13" font-weight="700" class="txt">databricks</text>
+  <rect x="420" y="10" width="400" height="21" rx="5" fill="#0d1117" stroke="#30363d"/>
+  <text x="434" y="24.5" font-size="11" class="dim">⌕  Search data, notebooks, jobs…</text>
+  <text x="1060" y="25" font-size="11" class="mut">andes-viento · serverless</text>
+  <circle cx="1212" cy="20" r="10" fill="#1f6feb"/><text x="1212" y="24" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">MG</text>
+
+  <!-- sidebar -->
+  <rect x="0" y="41" width="48" height="518" fill="#0d1117"/>
+  <line x1="48" y1="41" x2="48" y2="559" stroke="#21262d"/>
+  <g fill="none" stroke="#6e7681" stroke-width="1.6" stroke-linecap="round">
+    <rect x="16" y="60" width="16" height="13" rx="2"/>
+    <path d="M16 100 h16 M16 105 h16 M16 110 h10"/>
+    <ellipse cx="24" cy="138" rx="8" ry="3"/><path d="M16 138 v9 a8 3 0 0 0 16 0 v-9"/>
+    <circle cx="24" cy="180" r="7"/><path d="M24 176 v4 l3 2"/>
+  </g>
+  <rect x="6" y="200" width="36" height="32" rx="6" fill="#1f6feb" opacity=".18"/>
+  <rect x="0" y="204" width="3" height="24" rx="1" fill="#4c9aff"/>
+  <g fill="none" stroke="#4c9aff" stroke-width="1.6"><circle cx="18" cy="211" r="3"/><circle cx="30" cy="221" r="3"/><path d="M21 211 h4 v10 h2"/></g>
+  <g fill="none" stroke="#6e7681" stroke-width="1.6" stroke-linecap="round">
+    <path d="M17 262 l7-6 7 6 v9 h-14z"/><path d="M17 300 v-8 M24 300 v-13 M31 300 v-5"/>
+  </g>
+
+  <!-- encabezado del job -->
+  <text x="68" y="64" font-size="10.5" class="mut">Jobs &amp; Pipelines  ›  andes-viento-austral</text>
+  <text x="68" y="86" font-size="17" font-weight="700" class="txt">andes-viento-e2e</text>
+  <g class="cy" style="animation-name:run">
+    <rect x="270" y="72" width="78" height="20" rx="10" fill="#1f6feb" opacity=".2"/>
+    <circle cx="283" cy="82" r="4.5" fill="none" stroke="#4c9aff" stroke-width="1.6" stroke-dasharray="14 6" class="spin"/>
+    <text x="293" y="86" font-size="10.5" font-weight="600" fill="#4c9aff">Running</text>
+  </g>
+  <g class="cy" style="animation-name:ok" opacity="0">
+    <rect x="270" y="72" width="86" height="20" rx="10" fill="#238636" opacity=".25"/>
+    <circle cx="283" cy="82" r="5" fill="#3fb950"/><path d="M280.5 82 l2 2 l3.5-4" stroke="#0d1117" stroke-width="1.6" fill="none"/>
+    <text x="293" y="86" font-size="10.5" font-weight="600" fill="#3fb950">Succeeded</text>
+  </g>
+  <text x="68" y="114" font-size="11.5" class="mut">Runs</text>
+  <text x="112" y="114" font-size="11.5" font-weight="700" class="txt">Tasks</text>
+  <text x="160" y="114" font-size="11.5" class="mut">Lineage</text>
+  <text x="216" y="114" font-size="11.5" class="mut">Parameters</text>
+  <rect x="110" y="120" width="34" height="2" fill="#4c9aff"/>
+  <line x1="48" y1="122" x2="1240" y2="122" stroke="#21262d"/>
+  <rect x="770" y="70" width="80" height="24" rx="5" fill="none" stroke="#30363d"/>
+  <text x="810" y="86" text-anchor="middle" font-size="11" class="txt">Run now</text>
+  <rect x="860" y="70" width="70" height="24" rx="5" fill="none" stroke="#30363d"/>
+  <text x="895" y="86" text-anchor="middle" font-size="11" class="txt">Edit</text>
+
+  <!-- lienzo DAG -->
+  <rect x="49" y="123" width="900" height="436" fill="url(#grid)"/>
+  <text x="140" y="152" text-anchor="middle" class="lbl" fill="#8b949e">SETUP · LANDING</text><text x="316" y="152" text-anchor="middle" class="lbl" fill="#d08a4a">BRONZE</text><text x="492" y="152" text-anchor="middle" class="lbl" fill="#b8c0c8">SILVER</text><text x="668" y="152" text-anchor="middle" class="lbl" fill="#e3b93a">GOLD</text><text x="844" y="152" text-anchor="middle" class="lbl" fill="#7ee787">SERVE · QUALITY</text>
+  <path class="edge" marker-end="url(#arr)" d="M140.0 240 L140.0 316"/>
+  <path class="edge" marker-end="url(#arr)" d="M218 352.0 C226.0 352.0 226.0 280.0 234 280.0"/>
+  <path class="edge" marker-end="url(#arr)" d="M394 280.0 C402.0 280.0 402.0 280.0 410 280.0"/>
+  <path class="edge" marker-end="url(#arr)" d="M570 280.0 C578.0 280.0 578.0 208.0 586 208.0"/>
+  <path class="edge" marker-end="url(#arr)" d="M668.0 240 L668.0 316"/>
+  <path class="edge" marker-end="url(#arr)" d="M746 352.0 C754.0 352.0 754.0 208.0 762 208.0"/>
+  <path class="edge" marker-end="url(#arr)" d="M844.0 240 L844.0 316"/>
+  <path class="flow fl0" d="M140.0 240 L140.0 316"/>
+  <path class="flow fl1" d="M218 352.0 C226.0 352.0 226.0 280.0 234 280.0"/>
+  <path class="flow fl2" d="M394 280.0 C402.0 280.0 402.0 280.0 410 280.0"/>
+  <path class="flow fl3" d="M570 280.0 C578.0 280.0 578.0 208.0 586 208.0"/>
+  <path class="flow fl4" d="M668.0 240 L668.0 316"/>
+  <path class="flow fl5" d="M746 352.0 C754.0 352.0 754.0 208.0 762 208.0"/>
+  <path class="flow fl6" d="M844.0 240 L844.0 316"/>
+  <g class="k0" filter="url(#sh)"><rect class="card cy" x="62" y="176" width="156" height="64" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5"/><rect x="74" y="186" width="24" height="24" rx="5" fill="#6e7681" opacity=".25"/><circle cx="86" cy="198" r="5" fill="none" stroke="#c9d1d9" stroke-width="2" stroke-dasharray="3 2"/><text x="105" y="197" class="t">setup</text><text x="105" y="211" class="s">Notebook · UC</text><text x="74" y="230" class="s mono">capas + volumen</text><circle class="ring" cx="207" cy="187" r="7.5" fill="none" stroke="#4c9aff" stroke-width="1.6" stroke-dasharray="16 8" opacity="0"/><circle class="dot cy" cx="207" cy="187" r="4.5" fill="#3b444f"/></g>
+  <g class="k1" filter="url(#sh)"><rect class="card cy" x="62" y="320" width="156" height="64" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5"/><rect x="74" y="330" width="24" height="24" rx="5" fill="#0c8599" opacity=".25"/><path d="M80 348 v-5 M84 348 v-9 M88 348 v-7 M92 348 v-12" stroke="#66d9e8" stroke-width="2.2" stroke-linecap="round"/><text x="105" y="341" class="t">generate_data</text><text x="105" y="355" class="s">for_each · 11 fuentes</text><text x="74" y="374" class="s mono">landing · SF=0.1</text><circle class="ring" cx="207" cy="331" r="7.5" fill="none" stroke="#4c9aff" stroke-width="1.6" stroke-dasharray="16 8" opacity="0"/><circle class="dot cy" cx="207" cy="331" r="4.5" fill="#3b444f"/></g>
+  <g class="k2" filter="url(#sh)"><rect class="card cy" x="238" y="248.0" width="156" height="64" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5"/><rect x="238" y="248.0" width="4" height="64" rx="2" fill="url(#bronze)"/><rect x="250" y="258.0" width="24" height="24" rx="5" fill="#ff3621" opacity=".15"/><text x="262" y="274.0" text-anchor="middle" font-size="10" font-weight="700" fill="#ff7b5c" class="mono">{ }</text><text x="281" y="269.0" class="t">bronze_ingest</text><text x="281" y="283.0" class="s">Auto Loader · drift</text><text x="250" y="302.0" class="s mono">bronze.* (11)</text><circle class="ring" cx="383" cy="259.0" r="7.5" fill="none" stroke="#4c9aff" stroke-width="1.6" stroke-dasharray="16 8" opacity="0"/><circle class="dot cy" cx="383" cy="259.0" r="4.5" fill="#3b444f"/></g>
+  <g class="k3" filter="url(#sh)"><rect class="card cy" x="414" y="216.0" width="156" height="128" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5"/><rect x="414" y="216.0" width="4" height="128" rx="2" fill="url(#silver)"/><rect x="426" y="226.0" width="24" height="24" rx="5" fill="#8957e5" opacity=".25"/><path d="M432 234.0 h12 M432 238.0 h12 M432 242.0 h12" stroke="#d2a8ff" stroke-width="2" stroke-linecap="round"/><text x="457" y="237.0" class="t">silver</text><text x="457" y="251.0" class="s">2 × for_each</text><rect class="cy" style="animation-name:it0" x="426" y="262.0" width="9" height="9" rx="2" fill="#3b444f"/><text x="439" y="270.0" class="xs mono">assets</text><rect class="cy" style="animation-name:it1" x="496" y="262.0" width="9" height="9" rx="2" fill="#3b444f"/><text x="509" y="270.0" class="xs mono">contracts</text><rect class="cy" style="animation-name:it2" x="426" y="281.0" width="9" height="9" rx="2" fill="#3b444f"/><text x="439" y="289.0" class="xs mono">spot</text><rect class="cy" style="animation-name:it3" x="496" y="281.0" width="9" height="9" rx="2" fill="#3b444f"/><text x="509" y="289.0" class="xs mono">dispatch</text><rect class="cy" style="animation-name:it4" x="426" y="300.0" width="9" height="9" rx="2" fill="#3b444f"/><text x="439" y="308.0" class="xs mono">weather</text><rect class="cy" style="animation-name:it5" x="496" y="300.0" width="9" height="9" rx="2" fill="#3b444f"/><text x="509" y="308.0" class="xs mono">scada</text><rect class="cy" style="animation-name:it6" x="426" y="319.0" width="9" height="9" rx="2" fill="#3b444f"/><text x="439" y="327.0" class="xs mono">inverter</text><rect class="cy" style="animation-name:it7" x="496" y="319.0" width="9" height="9" rx="2" fill="#3b444f"/><text x="509" y="327.0" class="xs mono">orders</text><circle class="ring" cx="559" cy="227.0" r="7.5" fill="none" stroke="#4c9aff" stroke-width="1.6" stroke-dasharray="16 8" opacity="0"/><circle class="dot cy" cx="559" cy="227.0" r="4.5" fill="#3b444f"/></g>
+  <g class="k4" filter="url(#sh)"><rect class="card cy" x="590" y="176" width="156" height="64" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5"/><rect x="590" y="176" width="4" height="64" rx="2" fill="url(#gold)"/><rect x="602" y="186" width="24" height="24" rx="5" fill="#ff3621" opacity=".15"/><text x="614" y="202" text-anchor="middle" font-size="10" font-weight="700" fill="#ff7b5c" class="mono">{ }</text><text x="633" y="197" class="t">gold_dimensions</text><text x="633" y="211" class="s">SCD2 · point-in-time</text><text x="602" y="230" class="s mono">gold.dim_* (7)</text><circle class="ring" cx="735" cy="187" r="7.5" fill="none" stroke="#4c9aff" stroke-width="1.6" stroke-dasharray="16 8" opacity="0"/><circle class="dot cy" cx="735" cy="187" r="4.5" fill="#3b444f"/></g>
+  <g class="k5" filter="url(#sh)"><rect class="card cy" x="590" y="320" width="156" height="64" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5"/><rect x="590" y="320" width="4" height="64" rx="2" fill="url(#gold)"/><rect x="602" y="330" width="24" height="24" rx="5" fill="#ff3621" opacity=".15"/><text x="614" y="346" text-anchor="middle" font-size="10" font-weight="700" fill="#ff7b5c" class="mono">{ }</text><text x="633" y="341" class="t">gold_facts</text><text x="633" y="355" class="s">pérdidas por causa</text><text x="602" y="374" class="s mono">gold.fact_* (6)</text><circle class="ring" cx="735" cy="331" r="7.5" fill="none" stroke="#4c9aff" stroke-width="1.6" stroke-dasharray="16 8" opacity="0"/><circle class="dot cy" cx="735" cy="331" r="4.5" fill="#3b444f"/></g>
+  <g class="k6" filter="url(#sh)"><rect class="card cy" x="766" y="176" width="156" height="64" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5"/><rect x="766" y="176" width="4" height="64" rx="2" fill="url(#gold)"/><rect x="778" y="186" width="24" height="24" rx="5" fill="#1f6feb" opacity=".2"/><text x="790" y="202" text-anchor="middle" font-size="9" font-weight="700" fill="#79b8ff" class="mono">SQL</text><text x="809" y="197" class="t">marts + semántica</text><text x="809" y="211" class="s">SQL · metric views</text><text x="778" y="230" class="s mono">9 marts · 7 mv</text><circle class="ring" cx="911" cy="187" r="7.5" fill="none" stroke="#4c9aff" stroke-width="1.6" stroke-dasharray="16 8" opacity="0"/><circle class="dot cy" cx="911" cy="187" r="4.5" fill="#3b444f"/></g>
+  <g class="k7" filter="url(#sh)"><rect class="card cy" x="766" y="320" width="156" height="64" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5"/><rect x="778" y="330" width="24" height="24" rx="5" fill="#238636" opacity=".25"/><path d="M784 342 l4 4 l7-8" stroke="#3fb950" stroke-width="2" fill="none"/><text x="809" y="341" class="t">quality_gate</text><text x="809" y="355" class="s">10 invariantes</text><text x="778" y="374" class="s mono">bloquea si falla</text><circle class="ring" cx="911" cy="331" r="7.5" fill="none" stroke="#4c9aff" stroke-width="1.6" stroke-dasharray="16 8" opacity="0"/><circle class="dot cy" cx="911" cy="331" r="4.5" fill="#3b444f"/></g>
+  <rect x="62" y="404" width="860" height="118" rx="8" fill="#010409" stroke="#30363d"/><text x="76" y="424" class="lbl" fill="#8b949e">OUTPUT</text><line x1="62" y1="434" x2="922" y2="434" stroke="#21262d"/><g class="cy" style="animation-name:lg0" opacity="0"><text x="76" y="454" class="mono" font-size="10"><tspan fill="#3fb950">✓</tspan><tspan fill="#79b8ff" x="90">setup</tspan><tspan fill="#c9d1d9" x="208">andes_viento_dev · 5 capas · volumen raw</tspan></text></g><g class="cy" style="animation-name:lg1" opacity="0"><text x="76" y="474" class="mono" font-size="10"><tspan fill="#3fb950">✓</tspan><tspan fill="#79b8ff" x="90">generate_data</tspan><tspan fill="#c9d1d9" x="208">11 fuentes · 37 turbinas · 2023-01 → 2026-09</tspan></text></g><g class="cy" style="animation-name:lg2" opacity="0"><text x="76" y="494" class="mono" font-size="10"><tspan fill="#3fb950">✓</tspan><tspan fill="#79b8ff" x="90">bronze_ingest</tspan><tspan fill="#c9d1d9" x="208">HT-OS 5.0: 3 sensores nuevos → stream reiniciado</tspan></text></g><g class="cy" style="animation-name:lg3" opacity="0"><text x="76" y="514" class="mono" font-size="10"><tspan fill="#3fb950">✓</tspan><tspan fill="#79b8ff" x="90">silver</tspan><tspan fill="#c9d1d9" x="208">relojes, husos, kW/MW, clavados · SCD2 activos</tspan></text></g><g class="cy" style="animation-name:lg4" opacity="0"><text x="506" y="454" class="mono" font-size="10"><tspan fill="#3fb950">✓</tspan><tspan fill="#79b8ff" x="520">gold_dimensions</tspan><tspan fill="#c9d1d9" x="638">dim_turbine: cambios de multiplicadora (SCD2)</tspan></text></g><g class="cy" style="animation-name:lg5" opacity="0"><text x="506" y="474" class="mono" font-size="10"><tspan fill="#3fb950">✓</tspan><tspan fill="#79b8ff" x="520">gold_facts</tspan><tspan fill="#c9d1d9" x="638">potencial = generado + red + fallas + hielo</tspan></text></g><g class="cy" style="animation-name:lg6" opacity="0"><text x="506" y="494" class="mono" font-size="10"><tspan fill="#3fb950">✓</tspan><tspan fill="#79b8ff" x="520">marts + semántica</tspan><tspan fill="#c9d1d9" x="638">LEO jul-2025: -18 % vs presupuesto, explicado</tspan></text></g><g class="cy" style="animation-name:lg7" opacity="0"><text x="506" y="514" class="mono" font-size="10"><tspan fill="#3fb950">✓</tspan><tspan fill="#79b8ff" x="520">quality_gate</tspan><tspan fill="#c9d1d9" x="638">10/10 invariantes OK → Genie listo</tspan></text></g>
+
+  <!-- leyenda -->
+  <g font-size="9.5" class="mut">
+    <circle cx="66" cy="538" r="4" fill="#3b444f"/><text x="74" y="541">Pending</text>
+    <circle cx="124" cy="538" r="4" fill="#4c9aff"/><text x="132" y="541">Running</text>
+    <circle cx="184" cy="538" r="4" fill="#3fb950"/><text x="192" y="541">Succeeded</text>
+    <text x="270" y="541" class="dim">Ilustración del job definido en resources/andes_e2e.job.yml</text>
+  </g>
+
+  <!-- panel derecho -->
+  <rect x="949" y="123" width="290" height="436" fill="#0d1117"/>
+  <line x1="949" y1="123" x2="949" y2="559" stroke="#21262d"/>
+  <text x="967" y="148" font-size="12.5" font-weight="700" class="txt">Run details</text>
+  <text x="1220" y="148" text-anchor="end" font-size="10.5" class="mono mut">dev</text>
+  <g font-size="10.5">
+    <text x="967" y="172" class="mut">Trigger</text>
+    <text x="1220" y="172" text-anchor="end" fill="#79b8ff">andes-viento-daily</text>
+    <text x="967" y="191" class="mut">Compute</text>
+    <text x="1220" y="191" text-anchor="end" class="txt">Serverless · Photon</text>
+    <text x="967" y="210" class="mut">Catalog</text>
+    <text x="1220" y="210" text-anchor="end" class="txt">Unity Catalog · andes_viento_dev</text>
+    <text x="967" y="229" class="mut">Parameters</text>
+    <text x="1220" y="229" text-anchor="end" class="txt mono">scale_factor=0.1</text>
+    <text x="967" y="244" class="mut">Tasks</text>
+  </g>
+  <g class="cy" style="animation-name:cnt0" opacity="0"><text x="1220" y="244" text-anchor="end" font-size="10.5" class="txt mono">0/8</text></g><g class="cy" style="animation-name:cnt1" opacity="0"><text x="1220" y="244" text-anchor="end" font-size="10.5" class="txt mono">1/8</text></g><g class="cy" style="animation-name:cnt2" opacity="0"><text x="1220" y="244" text-anchor="end" font-size="10.5" class="txt mono">2/8</text></g><g class="cy" style="animation-name:cnt3" opacity="0"><text x="1220" y="244" text-anchor="end" font-size="10.5" class="txt mono">3/8</text></g><g class="cy" style="animation-name:cnt4" opacity="0"><text x="1220" y="244" text-anchor="end" font-size="10.5" class="txt mono">4/8</text></g><g class="cy" style="animation-name:cnt5" opacity="0"><text x="1220" y="244" text-anchor="end" font-size="10.5" class="txt mono">5/8</text></g><g class="cy" style="animation-name:cnt6" opacity="0"><text x="1220" y="244" text-anchor="end" font-size="10.5" class="txt mono">6/8</text></g><g class="cy" style="animation-name:cnt7" opacity="0"><text x="1220" y="244" text-anchor="end" font-size="10.5" class="txt mono">7/8</text></g><g class="cy" style="animation-name:cnt8" opacity="0"><text x="1220" y="244" text-anchor="end" font-size="10.5" class="txt mono">8/8</text></g>
+  <rect x="967" y="254" width="253" height="5" rx="2.5" fill="#21262d"/>
+  <rect class="bar" x="967" y="254" width="253" height="5" rx="2.5" fill="#4c9aff"/>
+
+  <line x1="967" y1="276" x2="1220" y2="276" stroke="#21262d"/>
+  <text x="967" y="296" class="lbl" fill="#8b949e">ROWS WRITTEN (SF=0.1, run real)</text>
+  <rect x="967" y="310" width="8" height="8" rx="2" fill="url(#bronze)"/><text x="982" y="318" class="txt mono" font-size="10.5">bronze.scada_turbine</text><text x="1220" y="318" text-anchor="end" class="dim mono" font-size="10.5">—</text><g class="cy" style="animation-name:cA" opacity="0"><rect x="1166" y="307" width="56" height="14" fill="#0d1117"/><text x="1220" y="318" text-anchor="end" class="txt mono" font-size="10.5">7.25M</text></g><rect x="967" y="331" width="8" height="8" rx="2" fill="url(#silver)"/><text x="982" y="339" class="txt mono" font-size="10.5">silver.scada_10min</text><text x="1220" y="339" text-anchor="end" class="dim mono" font-size="10.5">—</text><g class="cy" style="animation-name:cB" opacity="0"><rect x="1166" y="328" width="56" height="14" fill="#0d1117"/><text x="1220" y="339" text-anchor="end" class="txt mono" font-size="10.5">7.23M</text></g><rect x="967" y="352" width="8" height="8" rx="2" fill="url(#gold)"/><text x="982" y="360" class="txt mono" font-size="10.5">gold.fact_turbine_10min</text><text x="1220" y="360" text-anchor="end" class="dim mono" font-size="10.5">—</text><g class="cy" style="animation-name:cC" opacity="0"><rect x="1166" y="349" width="56" height="14" fill="#0d1117"/><text x="1220" y="360" text-anchor="end" class="txt mono" font-size="10.5">7.23M</text></g><rect x="967" y="373" width="8" height="8" rx="2" fill="url(#gold)"/><text x="982" y="381" class="txt mono" font-size="10.5">gold.fact_inverter_hourly</text><text x="1220" y="381" text-anchor="end" class="dim mono" font-size="10.5">—</text><g class="cy" style="animation-name:cD" opacity="0"><rect x="1166" y="370" width="56" height="14" fill="#0d1117"/><text x="1220" y="381" text-anchor="end" class="txt mono" font-size="10.5">0.37M</text></g>
+
+  <line x1="967" y1="398" x2="1220" y2="398" stroke="#21262d"/>
+  <text x="967" y="418" class="lbl" fill="#8b949e">RUN HISTORY · LAST 14 RUNS</text>
+  <rect x="967" y="440" width="14" height="22" rx="3" fill="#3fb950"/><rect x="985" y="444" width="14" height="18" rx="3" fill="#3fb950"/><rect x="1003" y="438" width="14" height="24" rx="3" fill="#3fb950"/><rect x="1021" y="446" width="14" height="16" rx="3" fill="#f85149"/><rect x="1039" y="442" width="14" height="20" rx="3" fill="#3fb950"/><rect x="1057" y="440" width="14" height="22" rx="3" fill="#3fb950"/><rect x="1075" y="443" width="14" height="19" rx="3" fill="#3fb950"/><rect x="1093" y="439" width="14" height="23" rx="3" fill="#3fb950"/><rect x="1111" y="441" width="14" height="21" rx="3" fill="#3fb950"/><rect x="1129" y="444" width="14" height="18" rx="3" fill="#3fb950"/><rect x="1147" y="440" width="14" height="22" rx="3" fill="#3fb950"/><rect x="1165" y="442" width="14" height="20" rx="3" fill="#3fb950"/><rect x="1183" y="438" width="14" height="24" rx="3" fill="#3fb950"/><rect x="1201" y="441" width="14" height="21" rx="3" class="cy" style="animation-name:newcell" fill="#21262d"/>
+  <g class="cy" style="animation-name:cE" opacity="0">
+    <text x="967" y="484" font-size="10" fill="#3fb950">✓ quality gate: 10/10 invariantes OK</text>
+  </g>
+  <text x="967" y="502" font-size="10" class="mut">ops.quarantine · ops.dq_results</text>
+  <text x="967" y="541" font-size="9.5" class="dim">CI/CD: GitHub Actions → Asset Bundles</text>
+</svg>
