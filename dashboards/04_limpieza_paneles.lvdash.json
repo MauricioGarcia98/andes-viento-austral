@@ -1,0 +1,344 @@
+{
+  "datasets": [
+    {
+      "name": "daily",
+      "displayName": "Suciedad diaria",
+      "queryLines": [
+        "SELECT reading_date, park_code, soiling_loss_pct, soiling_sensor_pct, lost_usd_since_cleaning, cleaning_cost_usd,\n",
+        "       soiling_lost_usd, soiling_lost_mwh, recommendation\n",
+        "FROM gold.mart_panel_cleaning\n"
+      ]
+    },
+    {
+      "name": "now",
+      "displayName": "Recomendación de hoy",
+      "queryLines": [
+        "SELECT * FROM gold.fn_recomendacion_limpieza(NULL)\n"
+      ]
+    },
+    {
+      "name": "water",
+      "displayName": "Agua por limpieza",
+      "queryLines": [
+        "SELECT park_code, date_format(created_date, 'yyyy') AS anio, count(*) AS limpiezas, sum(water_m3) AS agua_m3,\n",
+        "       sum(total_cost_usd) AS costo_usd\n",
+        "FROM gold.fact_maintenance_order WHERE order_type = 'LIMPIEZA' GROUP BY ALL\n"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "limpieza",
+      "displayName": "Limpieza de paneles",
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layout": [
+        {
+          "widget": {
+            "name": "limpieza_w1",
+            "multilineTextboxSpec": {
+              "lines": [
+                "# Caso 3 · Limpieza de paneles en la Puna",
+                "El polvo baja la generación; el agua es escasa y cara. Regla: limpiar cuando lo perdido desde la última limpieza supera su costo y no se pronostica lluvia."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "limpieza_w2",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "now",
+                  "fields": [
+                    {
+                      "name": "park_name",
+                      "expression": "`park_name`"
+                    },
+                    {
+                      "name": "soiling_loss_pct",
+                      "expression": "`soiling_loss_pct`"
+                    },
+                    {
+                      "name": "days_since_cleaning",
+                      "expression": "`days_since_cleaning`"
+                    },
+                    {
+                      "name": "lost_usd_since_cleaning",
+                      "expression": "`lost_usd_since_cleaning`"
+                    },
+                    {
+                      "name": "cleaning_cost_usd",
+                      "expression": "`cleaning_cost_usd`"
+                    },
+                    {
+                      "name": "rain_forecast_tomorrow_mm",
+                      "expression": "`rain_forecast_tomorrow_mm`"
+                    },
+                    {
+                      "name": "recommendation",
+                      "expression": "`recommendation`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "park_name",
+                    "displayName": "park_name"
+                  },
+                  {
+                    "fieldName": "soiling_loss_pct",
+                    "displayName": "soiling_loss_pct"
+                  },
+                  {
+                    "fieldName": "days_since_cleaning",
+                    "displayName": "days_since_cleaning"
+                  },
+                  {
+                    "fieldName": "lost_usd_since_cleaning",
+                    "displayName": "lost_usd_since_cleaning"
+                  },
+                  {
+                    "fieldName": "cleaning_cost_usd",
+                    "displayName": "cleaning_cost_usd"
+                  },
+                  {
+                    "fieldName": "rain_forecast_tomorrow_mm",
+                    "displayName": "rain_forecast_tomorrow_mm"
+                  },
+                  {
+                    "fieldName": "recommendation",
+                    "displayName": "recommendation"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Recomendación del último día"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "limpieza_w3",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "daily",
+                  "fields": [
+                    {
+                      "name": "reading_date",
+                      "expression": "`reading_date`"
+                    },
+                    {
+                      "name": "Suciedad",
+                      "expression": "AVG(`soiling_loss_pct`)"
+                    },
+                    {
+                      "name": "park_code",
+                      "expression": "`park_code`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "reading_date",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "reading_date"
+                },
+                "y": {
+                  "fieldName": "Suciedad",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Suciedad"
+                },
+                "color": {
+                  "fieldName": "park_code",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "park_code"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Suciedad estimada (%)"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 7,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "limpieza_w4",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "daily",
+                  "fields": [
+                    {
+                      "name": "reading_date",
+                      "expression": "`reading_date`"
+                    },
+                    {
+                      "name": "Perdido USD",
+                      "expression": "SUM(`lost_usd_since_cleaning`)"
+                    },
+                    {
+                      "name": "Costo limpieza USD",
+                      "expression": "SUM(`cleaning_cost_usd`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "reading_date",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "reading_date"
+                },
+                "y": {
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "fields": [
+                    {
+                      "fieldName": "Perdido USD",
+                      "displayName": "Perdido USD"
+                    },
+                    {
+                      "fieldName": "Costo limpieza USD",
+                      "displayName": "Costo limpieza USD"
+                    }
+                  ]
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "USD perdidos desde la última limpieza vs costo de limpiar"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 13,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "limpieza_w5",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "water",
+                  "fields": [
+                    {
+                      "name": "anio",
+                      "expression": "`anio`"
+                    },
+                    {
+                      "name": "m3",
+                      "expression": "SUM(`agua_m3`)"
+                    },
+                    {
+                      "name": "park_code",
+                      "expression": "`park_code`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "anio",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "anio"
+                },
+                "y": {
+                  "fieldName": "m3",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "m3"
+                },
+                "color": {
+                  "fieldName": "park_code",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "park_code"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Agua usada por año (m3)"
+              },
+              "mark": {
+                "layout": "stack"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 19,
+            "width": 6,
+            "height": 6
+          }
+        }
+      ]
+    }
+  ]
+}

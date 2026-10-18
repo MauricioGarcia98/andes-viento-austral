@@ -1,0 +1,516 @@
+{
+  "title": "Andes · Finanzas y mercado",
+  "description": "Para Finanzas y Riesgo: valor del curtailment, caso de inversión en baterías, desvío vs. presupuesto en MWh y USD, precios spot de CAMMESA, dólar e inflación en los costos.",
+  "domain": "Comercial",
+  "users": "Diego Achával (CFO), Camila Iturbe (Riesgo de Mercado) y Lucía Ferreyra (CEO)",
+  "serialized_space": {
+    "version": 2,
+    "config": {
+      "sample_questions": [
+        {
+          "id": "42af520a6e1f927eae251bfd8ecdd2e5",
+          "question": [
+            "¿Cuánto nos costó en USD el desvío contra presupuesto de este año?"
+          ]
+        },
+        {
+          "id": "a762e5981c4bc6a4e5349bf6d95883ed",
+          "question": [
+            "¿En qué parque conviene invertir en baterías?"
+          ]
+        },
+        {
+          "id": "d7deb9d51c958eda33bc59fd7620c548",
+          "question": [
+            "¿Por qué subió el costo de mantenimiento en dólares en 2024 si la inflación bajó?"
+          ]
+        },
+        {
+          "id": "f702de01be2d155975149c89454b101b",
+          "question": [
+            "¿Cuántos MWh y USD perdimos por curtailment en 2025?"
+          ]
+        }
+      ]
+    },
+    "data_sources": {
+      "tables": [
+        {
+          "identifier": "${catalog}.gold.dim_date"
+        },
+        {
+          "identifier": "${catalog}.gold.dim_park"
+        },
+        {
+          "identifier": "${catalog}.gold.fact_curtailment_hourly"
+        },
+        {
+          "identifier": "${catalog}.gold.fact_maintenance_order"
+        },
+        {
+          "identifier": "${catalog}.gold.mart_curtailment_battery"
+        },
+        {
+          "identifier": "${catalog}.gold.mart_generation_vs_budget"
+        },
+        {
+          "identifier": "${catalog}.gold.mv_curtailment"
+        },
+        {
+          "identifier": "${catalog}.gold.mv_generacion"
+        },
+        {
+          "identifier": "${catalog}.gold.v_park_price_month"
+        }
+      ]
+    },
+    "instructions": {
+      "text_instructions": [
+        {
+          "id": "60d6625fd0ad9ddc7128784e1136d319",
+          "content": [
+            "Sos el asistente de Finanzas de Andes Viento Austral.\n",
+            "- Moneda: USD salvo pedido explícito de pesos. Para pasar pesos a dólares usá dim_date.fx_ars_usd del día (BNA vendedor).\n",
+            "- El curtailment se valoriza de dos formas: a precio spot del nodo (lost_value_spot_usd, bajo porque el nodo Patagonia\n",
+            "  se desacopla con congestión) y a precio de realización PPA (v_park_price_month). Aclarar siempre cuál se usa.\n",
+            "- Para baterías usá fn_ranking_baterias(meses): repago simple = CAPEX / valor anual recuperado.\n",
+            "- Para explicar un desvío de UN parque en UN mes usá las columnas de la cascada de mart_generation_vs_budget\n",
+            "  (resource_effect_mwh, lost_curtailment_mwh, lost_icing_mwh...). La cascada certificada vive en el agent de Operación.\n",
+            "- \"Este año\" = el año del último mes con datos de mart_generation_vs_budget. Nunca uses current_date().\n",
+            "- Inflación: los costos en pesos suben mes a mes; compará en USD para ver costo real.\n",
+            "- Capex de baterías: usá fn_ranking_baterias (una fila por parque y opción). mart_curtailment_battery es mensual:\n",
+            "  sumar battery_capex_usd ahí multiplica la inversión por la cantidad de meses.\n",
+            "- Repago = simple_payback_years (años). ranking es sólo la posición.\n",
+            "- fn_perdida_curtailment trae una fila por parque y una última fila 'TOTAL EMPRESA' con el total.\n",
+            "- Para el desvío de toda la empresa, de una región o de un año sumá mart_generation_vs_budget: sum(actual_mwh) - sum(budget_p50_mwh) y sum(actual_mwh) / sum(budget_p50_mwh) - 1.\n",
+            "- El mes en curso es parcial (is_month_to_date = true): su presupuesto ya está prorrateado; avisalo al responder.\n",
+            "- Órdenes de CAMMESA = horas con has_instruction = true (el Motivo es NULL cuando no hay orden).\n",
+            "- El curtailment que asume el presupuesto es un porcentaje: mart_generation_vs_budget.assumed_curtailment (0,04 = 4 %).\n",
+            "- En las funciones, para \"todos los parques\" pasá NULL (sin comillas), nunca el texto 'NULL'."
+          ]
+        }
+      ],
+      "example_question_sqls": [
+        {
+          "id": "1b3bee537e839aa8433e83ba2e8ee043",
+          "question": [
+            "Inversión total si se instala una opción de batería en todos los parques"
+          ],
+          "sql": [
+            "SELECT option_code, sum(battery_capex_usd) AS capex_total_usd FROM ${catalog}.gold.fn_ranking_baterias(12) WHERE option_code = 'BESS-30x2' GROUP BY option_code"
+          ]
+        },
+        {
+          "id": "416e387a0bf1c3ade7821c199991a53d",
+          "question": [
+            "¿En qué parque conviene invertir en baterías?"
+          ],
+          "sql": [
+            "SELECT * FROM ${catalog}.gold.fn_ranking_baterias(12) ORDER BY ranking LIMIT 5"
+          ]
+        },
+        {
+          "id": "59bf7c891811b8b1af656a9ec031bf19",
+          "question": [
+            "Desvío de generación valorizado en USD por año"
+          ],
+          "sql": [
+            "SELECT year, round(sum(variance_mwh), 1) AS desvio_mwh, round(sum(variance_value_usd), 0) AS desvio_usd\n",
+            "FROM ${catalog}.gold.mart_generation_vs_budget GROUP BY year ORDER BY year"
+          ]
+        },
+        {
+          "id": "6b991ab477dd026fe99f60f217723165",
+          "question": [
+            "¿Cuántos MWh y USD perdimos por curtailment en 2025?"
+          ],
+          "sql": [
+            "SELECT * FROM ${catalog}.gold.fn_perdida_curtailment(NULL, '2025-01-01', '2025-12-31')"
+          ]
+        },
+        {
+          "id": "7ff29226282d06043025c187cb34afda",
+          "question": [
+            "Curtailment de la empresa por año"
+          ],
+          "sql": [
+            "SELECT year(reading_date) AS anio, round(sum(lost_curtailment_mwh), 1) AS mwh, round(sum(lost_value_spot_usd), 0) AS usd_spot\n",
+            "FROM ${catalog}.gold.fact_curtailment_hourly GROUP BY ALL ORDER BY anio"
+          ]
+        },
+        {
+          "id": "9aa4509ba1fd60ec333be8c012f16908",
+          "question": [
+            "¿Qué curtailment y disponibilidad asumía el presupuesto por región?"
+          ],
+          "sql": [
+            "SELECT year, region, max(assumed_curtailment) AS curtailment_supuesto, max(assumed_availability) AS disponibilidad_supuesta\n",
+            "FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2025 GROUP BY ALL"
+          ]
+        },
+        {
+          "id": "a4dd3f03c47b1abe424c701d89ea0d11",
+          "question": [
+            "Curtailment mensual en % del potencial (metric view)"
+          ],
+          "sql": [
+            "SELECT `Mes`, round(MEASURE(`Curtailment (% del potencial)`) * 100, 2) AS curtailment_pct,\n",
+            "       round(MEASURE(`Energía perdida por curtailment (MWh)`), 1) AS mwh\n",
+            "FROM ${catalog}.gold.mv_curtailment GROUP BY ALL ORDER BY `Mes`"
+          ]
+        },
+        {
+          "id": "b318e599e5c64e97b9629c748510a1ad",
+          "question": [
+            "Horas con orden de CAMMESA por parque en un año"
+          ],
+          "sql": [
+            "SELECT p.park_name, count_if(f.has_instruction) AS horas_con_orden\n",
+            "FROM ${catalog}.gold.fact_curtailment_hourly f JOIN ${catalog}.gold.dim_park p ON p.park_key = f.park_key\n",
+            "WHERE year(f.reading_date) = 2025 GROUP BY ALL ORDER BY horas_con_orden DESC"
+          ]
+        },
+        {
+          "id": "b34595551df4b098bd994f2a5aaae595",
+          "question": [
+            "Precio spot medio por nodo y año en USD/MWh"
+          ],
+          "sql": [
+            "SELECT cammesa_node, year(reading_date) AS anio, round(avg(spot_usd_mwh), 2) AS spot_usd\n",
+            "FROM ${catalog}.gold.fact_curtailment_hourly GROUP BY ALL ORDER BY anio, cammesa_node"
+          ]
+        },
+        {
+          "id": "bef02b509d9f56c326df79b30802b7b6",
+          "question": [
+            "Costo de mantenimiento por año en pesos y en dólares"
+          ],
+          "sql": [
+            "SELECT year(created_date) AS anio, round(sum(labor_cost_ars), 0) AS mano_obra_ars,\n",
+            "       round(sum(labor_cost_usd), 0) AS mano_obra_usd, round(sum(total_cost_usd), 0) AS total_usd\n",
+            "FROM ${catalog}.gold.fact_maintenance_order GROUP BY 1 ORDER BY 1"
+          ]
+        },
+        {
+          "id": "bf4f9fb06542d6b62c38bbd6b8050637",
+          "question": [
+            "Desvío contra presupuesto de toda la empresa en un año (MWh y %)"
+          ],
+          "sql": [
+            "SELECT year, round(sum(actual_mwh) - sum(budget_p50_mwh), 1) AS desvio_mwh,\n",
+            "       round(sum(actual_mwh) / sum(budget_p50_mwh) - 1, 4) AS desvio_pct\n",
+            "FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2025 GROUP BY year"
+          ]
+        }
+      ],
+      "sql_functions": [
+        {
+          "id": "65de1c92e24a5867fe835f506e080eaa",
+          "identifier": "${catalog}.gold.fn_ranking_baterias"
+        },
+        {
+          "id": "9cf20188eff29aa7b00cd3f3049dca9f",
+          "identifier": "${catalog}.gold.fn_perdida_curtailment"
+        }
+      ]
+    },
+    "benchmarks": {
+      "questions": [
+        {
+          "id": "086117616c111d5f9911813158178bf1",
+          "question": [
+            "¿Cuál fue el dólar oficial el 13 de diciembre de 2023?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT fx_ars_usd FROM ${catalog}.gold.dim_date WHERE date = '2023-12-13'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "0c049e198953ac76c52bdfa21a56a328",
+          "question": [
+            "Precio spot medio del nodo Patagonia en 2025 en USD/MWh"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(avg(spot_usd_mwh), 2) FROM ${catalog}.gold.fact_curtailment_hourly WHERE cammesa_node = 'PATAGONIA' AND year(reading_date) = 2025"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "0dfade38baa6030aebe7a201d7f19cf9",
+          "question": [
+            "¿Creció el curtailment de 2023 a 2025?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT year(reading_date) AS anio, round(sum(lost_curtailment_mwh), 1) FROM ${catalog}.gold.fact_curtailment_hourly WHERE year(reading_date) BETWEEN 2023 AND 2025 GROUP BY 1 ORDER BY 1"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "1d5a1268312ef65ea006038ef910d35c",
+          "question": [
+            "Precio de realización PPA de Cañadón León en julio 2025"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT ppa_price_usd_mwh FROM ${catalog}.gold.v_park_price_month WHERE park_code = 'LEO' AND month_start = '2025-07-01'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "3cb1eecca3c7b8e91086514ebf4f93db",
+          "question": [
+            "Precio spot medio en horas con curtailment vs sin curtailment en Patagonia"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT has_instruction, round(avg(spot_usd_mwh), 2) FROM ${catalog}.gold.fact_curtailment_hourly WHERE cammesa_node = 'PATAGONIA' GROUP BY has_instruction"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "4b9f4fc0404d5c2ab0257bdf059863f1",
+          "question": [
+            "¿Cuántas horas con orden de CAMMESA tuvo Pico Truncado Alto en 2025?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT count(*) FROM ${catalog}.gold.fact_curtailment_hourly WHERE park_code = 'PIC' AND has_instruction AND year(reading_date) = 2025"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "59fc2b20fd9404550615c1e67f48787b",
+          "question": [
+            "¿Cuál fue el efecto del recurso (viento) en el desvío de Cañadón León en julio 2025?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(resource_effect_mwh, 1) FROM ${catalog}.gold.mart_generation_vs_budget WHERE park_code = 'LEO' AND year_month = '2025-07'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "6c0d608452454135f3fab322e435f2e6",
+          "question": [
+            "¿A qué hora local se pierde más energía por curtailment?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT hour(hour_local) AS hora, round(sum(lost_curtailment_mwh), 1) AS mwh FROM ${catalog}.gold.fact_curtailment_hourly GROUP BY 1 ORDER BY mwh DESC LIMIT 1"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "6c80031ecee61c12266c987f851bfacd",
+          "question": [
+            "Desvío porcentual vs presupuesto de toda la empresa en 2024"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(sum(actual_mwh) / sum(budget_p50_mwh) - 1, 4) FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2024"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "7957361685b932cf9eeeb8845f91cba1",
+          "question": [
+            "¿Cuántos MWh se perdieron por curtailment en 2024?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(sum(lost_curtailment_mwh), 1) FROM ${catalog}.gold.fact_curtailment_hourly WHERE year(reading_date) = 2024"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "a173e8f2d9a79896cc32dabd40c6c005",
+          "question": [
+            "¿Qué porcentaje del potencial perdió San Julián Meseta por curtailment en 2025?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(sum(lost_curtailment_mwh) / sum(potential_mwh), 4) FROM ${catalog}.gold.fact_curtailment_hourly WHERE park_code = 'SJU' AND year(reading_date) = 2025"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "a24ddfd67ca6f72b871c2ffcbdf746f0",
+          "question": [
+            "Valor a precio spot del curtailment de 2025"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(sum(lost_value_spot_usd), 0) FROM ${catalog}.gold.fact_curtailment_hourly WHERE year(reading_date) = 2025"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "afb492928f63c869aedf980c98632885",
+          "question": [
+            "¿Qué porcentaje de curtailment asumía el presupuesto 2025 para la Patagonia?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT DISTINCT assumed_curtailment FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2025 AND region = 'PATAGONIA'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "b8eb111cedbc6df855fb208136d10793",
+          "question": [
+            "¿Qué parque y tamaño de batería tiene el mejor repago?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT park_name, option_code FROM ${catalog}.gold.fn_ranking_baterias(12) WHERE ranking = 1"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "bf03aac067ade292ddc74f8bac028e34",
+          "question": [
+            "Costo de mantenimiento total en USD en 2023"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(sum(total_cost_usd), 0) FROM ${catalog}.gold.fact_maintenance_order WHERE year(created_date) = 2023"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "bf1cd2c3b24cf87bdb359a2f3878d7bc",
+          "question": [
+            "¿Cuánto costó la mano de obra de mantenimiento en dólares en 2024?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(sum(labor_cost_usd), 0) FROM ${catalog}.gold.fact_maintenance_order WHERE year(created_date) = 2024"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "d3687cb38fa87a2fa9ba403202d13ce2",
+          "question": [
+            "¿Qué parque perdió más energía por curtailment en 2025?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT p.park_name, round(sum(f.lost_curtailment_mwh), 1) AS mwh FROM ${catalog}.gold.fact_curtailment_hourly f JOIN ${catalog}.gold.dim_park p ON p.park_key = f.park_key WHERE year(f.reading_date) = 2025 GROUP BY p.park_name ORDER BY mwh DESC LIMIT 1"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "e1cc1f3ad4651344b67d454aaeba56fc",
+          "question": [
+            "Inversión total si se instala BESS-10x4 en todos los parques eólicos"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(sum(battery_capex_usd), 0) FROM ${catalog}.gold.fn_ranking_baterias(12) WHERE option_code = 'BESS-10x4'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "e28edf30dde7e237c60277a9a0ccbd4c",
+          "question": [
+            "Desvío total en MWh vs presupuesto de toda la empresa en 2025"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT round(sum(variance_mwh), 1) FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2025"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "f2047a514265d3063a34d58eff8d0e45",
+          "question": [
+            "¿Cuántos años de repago tiene la batería BESS-20x4 en Cañadón León?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT simple_payback_years FROM ${catalog}.gold.fn_ranking_baterias(12) WHERE park_name = 'Cañadón León' AND option_code = 'BESS-20x4'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "f40caf1789e04718c1da6ddada26b594",
+          "question": [
+            "¿Cuál es el motivo más frecuente de las órdenes de CAMMESA?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT grid_reason, count(*) AS horas FROM ${catalog}.gold.fact_curtailment_hourly WHERE has_instruction GROUP BY grid_reason ORDER BY horas DESC LIMIT 1"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.local/
+spark-warehouse/
+metastore_db/
+derby.log
+.databricks/
+dist/
+build/
+node_modules/
+docs/diagrams/src/node_modules/
+.env
+genie/deployed_*.json

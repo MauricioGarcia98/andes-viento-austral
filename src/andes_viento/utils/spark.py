@@ -1,0 +1,52 @@
+"""Helpers para obtener/crear la SparkSession en Databricks y en local."""
+
+from __future__ import annotations
+
+import os
+
+from pyspark.sql import SparkSession
+
+from andes_viento.config import is_databricks
+
+
+def get_spark(app_name: str = "andes_viento") -> SparkSession:
+    """En Databricks devuelve la sesión activa (serverless o clásica).
+
+    En local crea una sesión con Delta Lake OSS configurado. Se usa en tests y
+    en `scripts/run_local.py`.
+    """
+    active = SparkSession.getActiveSession()
+    if active is not None:
+        return active
+    if is_databricks():  # pragma: no cover
+        return SparkSession.builder.getOrCreate()
+    return build_local_spark(app_name)
+
+
+def build_local_spark(app_name: str = "andes_viento-local", warehouse_dir: str | None = None) -> SparkSession:
+    from delta import configure_spark_with_delta_pip
+
+    builder = (
+        SparkSession.builder.appName(app_name)
+        .master("local[*]")
+        .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
+        .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
+        .config("spark.sql.shuffle.partitions", "8")
+        .config("spark.sql.session.timeZone", "UTC")
+        .config("spark.ui.enabled", "false")
+        .config("spark.databricks.delta.properties.defaults.enableChangeDataFeed", "true")
+        .config("spark.databricks.delta.schema.autoMerge.enabled", "true")
+        .config("spark.sql.streaming.schemaInference", "true")
+    )
+    if warehouse_dir:
+        # metastore Derby persistente: las tablas sobreviven entre ejecuciones locales
+        builder = (
+            builder.config("spark.sql.warehouse.dir", warehouse_dir)
+            .config("spark.sql.catalogImplementation", "hive")
+            .config("spark.hadoop.javax.jdo.option.ConnectionURL",
+                    f"jdbc:derby:;databaseName={warehouse_dir}/metastore_db;create=true")
+        )
+    if os.environ.get("ANDES_DELTA_JARS_IN_CLASSPATH") == "1":
+        # entornos sin acceso a Maven: los jars de Delta ya están en pyspark/jars
+        return builder.getOrCreate()
+    return configure_spark_with_delta_pip(builder).getOrCreate()

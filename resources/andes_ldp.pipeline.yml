@@ -1,0 +1,20 @@
+# Versión DECLARATIVA (Lakeflow Declarative Pipelines, ex DLT) de una parte del pipeline:
+# SCADA + instrucciones de CAMMESA + presupuesto -> generación diaria y curtailment por parque.
+# Comparala con la versión imperativa (Job + notebooks): ver learning/13 y docs/01_arquitectura.md.
+# Free Edition: un solo pipeline activo a la vez.
+resources:
+  pipelines:
+    andes_ldp:
+      name: andes-viento-ldp
+      catalog: ${resources.schemas.ldp.catalog_name}
+      schema: ${resources.schemas.ldp.name}
+      serverless: true
+      continuous: false
+      channel: CURRENT
+      photon: true
+      configuration:
+        landing_path: /Volumes/${var.catalog}/landing/raw/landing
+      libraries:
+        - file: { path: ../pipelines/01_bronze.sql }
+        - file: { path: ../pipelines/02_silver.sql }
+        - file: { path: ../pipelines/03_gold.sql }

@@ -1,0 +1,285 @@
+{
+  "datasets": [
+    {
+      "name": "settlement",
+      "displayName": "Liquidación mensual",
+      "queryLines": [
+        "SELECT client_name, contract_id, month_start, year_month, committed_mwh, delivered_mwh, compliance_pct, shortfall_mwh,\n",
+        "       penalty_cost_usd, spot_cover_cost_usd, best_option, best_option_cost_usd\n",
+        "FROM gold.fact_ppa_settlement\n"
+      ]
+    },
+    {
+      "name": "forecast",
+      "displayName": "Proyección del mes",
+      "queryLines": [
+        "SELECT * FROM gold.fn_proyeccion_ppa(NULL)\n"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "ppa",
+      "displayName": "Cumplimiento PPA",
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layout": [
+        {
+          "widget": {
+            "name": "ppa_w1",
+            "multilineTextboxSpec": {
+              "lines": [
+                "# Caso 4 · Cumplimiento de PPA",
+                "¿Llegamos al volumen comprometido este mes? Si no, ¿comprar en el spot o pagar la penalidad? Dueña: Sofía Bertolini (Gerente Comercial)."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "ppa_w2",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "forecast",
+                  "fields": [
+                    {
+                      "name": "client_name",
+                      "expression": "`client_name`"
+                    },
+                    {
+                      "name": "committed_mwh",
+                      "expression": "`committed_mwh`"
+                    },
+                    {
+                      "name": "delivered_mtd_mwh",
+                      "expression": "`delivered_mtd_mwh`"
+                    },
+                    {
+                      "name": "projected_mwh",
+                      "expression": "`projected_mwh`"
+                    },
+                    {
+                      "name": "projected_compliance_pct",
+                      "expression": "`projected_compliance_pct`"
+                    },
+                    {
+                      "name": "projected_shortfall_mwh",
+                      "expression": "`projected_shortfall_mwh`"
+                    },
+                    {
+                      "name": "spot_cover_cost_usd",
+                      "expression": "`spot_cover_cost_usd`"
+                    },
+                    {
+                      "name": "penalty_cost_usd",
+                      "expression": "`penalty_cost_usd`"
+                    },
+                    {
+                      "name": "recommendation",
+                      "expression": "`recommendation`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "client_name",
+                    "displayName": "client_name"
+                  },
+                  {
+                    "fieldName": "committed_mwh",
+                    "displayName": "committed_mwh"
+                  },
+                  {
+                    "fieldName": "delivered_mtd_mwh",
+                    "displayName": "delivered_mtd_mwh"
+                  },
+                  {
+                    "fieldName": "projected_mwh",
+                    "displayName": "projected_mwh"
+                  },
+                  {
+                    "fieldName": "projected_compliance_pct",
+                    "displayName": "projected_compliance_pct"
+                  },
+                  {
+                    "fieldName": "projected_shortfall_mwh",
+                    "displayName": "projected_shortfall_mwh"
+                  },
+                  {
+                    "fieldName": "spot_cover_cost_usd",
+                    "displayName": "spot_cover_cost_usd"
+                  },
+                  {
+                    "fieldName": "penalty_cost_usd",
+                    "displayName": "penalty_cost_usd"
+                  },
+                  {
+                    "fieldName": "recommendation",
+                    "displayName": "recommendation"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Proyección del mes en curso"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "ppa_w3",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "settlement",
+                  "fields": [
+                    {
+                      "name": "month_start",
+                      "expression": "`month_start`"
+                    },
+                    {
+                      "name": "Cumplimiento",
+                      "expression": "AVG(`compliance_pct`)"
+                    },
+                    {
+                      "name": "client_name",
+                      "expression": "`client_name`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "month_start",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "month_start"
+                },
+                "y": {
+                  "fieldName": "Cumplimiento",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Cumplimiento"
+                },
+                "color": {
+                  "fieldName": "client_name",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "client_name"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Cumplimiento mensual por cliente"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 8,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "ppa_w4",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "settlement",
+                  "fields": [
+                    {
+                      "name": "year_month",
+                      "expression": "`year_month`"
+                    },
+                    {
+                      "name": "USD",
+                      "expression": "SUM(`best_option_cost_usd`)"
+                    },
+                    {
+                      "name": "client_name",
+                      "expression": "`client_name`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "year_month",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "year_month"
+                },
+                "y": {
+                  "fieldName": "USD",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "USD"
+                },
+                "color": {
+                  "fieldName": "client_name",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "client_name"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Costo de faltantes (mejor opción, USD)"
+              },
+              "mark": {
+                "layout": "stack"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 14,
+            "width": 6,
+            "height": 6
+          }
+        }
+      ]
+    }
+  ]
+}

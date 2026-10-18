@@ -1,0 +1,34 @@
+# Dashboards AI/BI (Lakeview), uno por caso de negocio. Las consultas usan gold.<tabla>:
+# `dataset_catalog` fija el catálogo según el target (dev/prod).
+resources:
+  dashboards:
+    direccion_generacion:
+      display_name: "Andes · Dirección · Generación vs presupuesto"
+      file_path: ../dashboards/01_direccion_generacion.lvdash.json
+      warehouse_id: ${var.warehouse_id}
+      dataset_catalog: ${var.catalog}
+    curtailment_baterias:
+      display_name: "Andes · Caso 1 · Curtailment y baterías"
+      file_path: ../dashboards/02_curtailment_baterias.lvdash.json
+      warehouse_id: ${var.warehouse_id}
+      dataset_catalog: ${var.catalog}
+    mantenimiento_predictivo:
+      display_name: "Andes · Caso 2 · Mantenimiento predictivo"
+      file_path: ../dashboards/03_mantenimiento_predictivo.lvdash.json
+      warehouse_id: ${var.warehouse_id}
+      dataset_catalog: ${var.catalog}
+    limpieza_paneles:
+      display_name: "Andes · Caso 3 · Limpieza de paneles"
+      file_path: ../dashboards/04_limpieza_paneles.lvdash.json
+      warehouse_id: ${var.warehouse_id}
+      dataset_catalog: ${var.catalog}
+    cumplimiento_ppa:
+      display_name: "Andes · Caso 4 · Cumplimiento PPA"
+      file_path: ../dashboards/05_cumplimiento_ppa.lvdash.json
+      warehouse_id: ${var.warehouse_id}
+      dataset_catalog: ${var.catalog}
+    garantia_disponibilidad:
+      display_name: "Andes · Caso 5 · Garantía del fabricante"
+      file_path: ../dashboards/06_garantia_disponibilidad.lvdash.json
+      warehouse_id: ${var.warehouse_id}
+      dataset_catalog: ${var.catalog}

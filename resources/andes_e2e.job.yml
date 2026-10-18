@@ -1,0 +1,126 @@
+# Job principal: landing -> bronze -> silver -> gold -> gobierno -> capa semántica -> quality gate.
+# Compute serverless (no se declaran clusters). Cada task es un notebook delgado que llama a src/andes_viento.
+resources:
+  jobs:
+    andes_e2e:
+      name: andes-viento-e2e
+      description: Pipeline medallion completo de Andes Viento Austral (SCADA, CMMS, CAMMESA, PPA, clima)
+      max_concurrent_runs: 1
+      timeout_seconds: 14400
+      tags:
+        project: andes-viento-austral
+        layer: all
+      # Alertas: email_notifications: { on_failure: [operaciones-datos@andesviento.com.ar] }
+
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: scale_factor
+          default: ${var.scale_factor}
+        - name: start_date
+          default: ${var.start_date}
+        - name: end_date
+          default: ${var.end_date}
+        - name: generate
+          default: "true"
+        - name: full_refresh
+          default: "false"
+
+      tasks:
+        - task_key: setup
+          notebook_task:
+            notebook_path: ../notebooks/00_setup.py
+
+        # if/else: ¿regenerar la historia completa o sólo procesar lo que ya llegó?
+        - task_key: should_generate
+          depends_on: [{ task_key: setup }]
+          condition_task:
+            op: EQUAL_TO
+            left: "{{job.parameters.generate}}"
+            right: "true"
+
+        # rama "true": una ejecución del generador por fuente, 3 en paralelo
+        - task_key: generate_data
+          depends_on: [{ task_key: should_generate, outcome: "true" }]
+          for_each_task:
+            inputs: '["scada_turbine","inverter_5min","weather","cmms_assets","cmms_work_orders","cmms_crews","cammesa_dispatch","cammesa_spot_prices","ppa_contracts","fx_rates","generation_budget"]'
+            concurrency: 3
+            task:
+              task_key: generate_source
+              notebook_task:
+                notebook_path: ../notebooks/01_generate_source.py
+                base_parameters:
+                  source: "{{input}}"
+                  mode: full
+
+        # converge de las dos ramas: si se generó, depende de generate_data; si no, del outcome "false".
+        # NONE_FAILED: corre aunque una de las dos dependencias haya quedado "excluded".
+        - task_key: bronze_ingest
+          depends_on:
+            - task_key: generate_data
+            - task_key: should_generate
+              outcome: "false"
+          run_if: NONE_FAILED
+          # Auto Loader corta el stream al ver columnas nuevas: bronze.py lo reinicia en código.
+          # Estos reintentos son sólo para fallas de infraestructura.
+          max_retries: 1
+          min_retry_interval_millis: 30000
+          notebook_task:
+            notebook_path: ../notebooks/02_bronze_ingest.py
+
+        - task_key: silver_reference
+          depends_on: [{ task_key: bronze_ingest }]
+          for_each_task:
+            inputs: '["assets","crews","contracts","fx_rates","spot_prices","budget","dispatch","weather"]'
+            concurrency: 4
+            task:
+              task_key: silver_reference_entity
+              notebook_task:
+                notebook_path: ../notebooks/03_silver_entity.py
+                base_parameters:
+                  entity: "{{input}}"
+
+        # la telemetría necesita silver.asset_tags (nombres viejos y nuevos de cada turbina)
+        - task_key: silver_telemetry
+          depends_on: [{ task_key: silver_reference }]
+          for_each_task:
+            inputs: '["scada","inverter","work_orders"]'
+            concurrency: 3
+            task:
+              task_key: silver_telemetry_entity
+              notebook_task:
+                notebook_path: ../notebooks/03_silver_entity.py
+                base_parameters:
+                  entity: "{{input}}"
+
+        - task_key: gold_dimensions
+          depends_on: [{ task_key: silver_telemetry }]
+          notebook_task:
+            notebook_path: ../notebooks/04_gold_dimensions.py
+
+        - task_key: gold_facts
+          depends_on: [{ task_key: gold_dimensions }]
+          notebook_task:
+            notebook_path: ../notebooks/05_gold_facts.py
+            base_parameters:
+              full_refresh: "{{job.parameters.full_refresh}}"
+
+        - task_key: gold_marts
+          depends_on: [{ task_key: gold_facts }]
+          notebook_task:
+            notebook_path: ../notebooks/06_gold_marts.py
+
+        - task_key: governance
+          depends_on: [{ task_key: gold_marts }]
+          notebook_task:
+            notebook_path: ../notebooks/07_governance.py
+
+        - task_key: semantic_layer
+          depends_on: [{ task_key: gold_marts }]
+          notebook_task:
+            notebook_path: ../notebooks/08_semantic_layer.py
+
+        - task_key: quality_gate
+          depends_on: [{ task_key: governance }, { task_key: semantic_layer }]
+          notebook_task:
+            notebook_path: ../notebooks/09_quality_gate.py

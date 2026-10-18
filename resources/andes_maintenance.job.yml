@@ -1,0 +1,19 @@
+resources:
+  jobs:
+    andes_maintenance:
+      name: andes-viento-maintenance
+      description: OPTIMIZE + VACUUM + ANALYZE semanal de silver y gold
+      tags:
+        project: andes-viento-austral
+        layer: ops
+      schedule:
+        quartz_cron_expression: "0 0 4 ? * SUN"
+        timezone_id: America/Argentina/Buenos_Aires
+        pause_status: PAUSED
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+      tasks:
+        - task_key: optimize_vacuum_analyze
+          notebook_task:
+            notebook_path: ../notebooks/10_maintenance.py

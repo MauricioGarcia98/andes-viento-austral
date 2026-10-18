@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 640" width="1200" height="640" font-family="-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" role="img" aria-label="Mockup del dashboard de Dirección">
+  <rect width="1200" height="640" rx="12" fill="#f7f8fa"/>
+  <text x="32" y="44" font-size="20" font-weight="700" fill="#1b3139">Andes · Dirección · Generación vs presupuesto</text>
+  <text x="32" y="68" font-size="12" fill="#5f7281">Generación real vs. presupuesto P50 aprobado y las causas del desvío. Dueña: Lucía Ferreyra (CEO).</text>
+  <g font-size="12" fill="#5f7281">
+    <rect x="32" y="88" width="368" height="100" rx="8" fill="#fff" stroke="#e5e7eb"/><text x="48" y="112">MWh generados (12 m)</text><text x="48" y="160" font-size="34" font-weight="700" fill="#1b3139">≈ 1,1 M</text>
+    <rect x="416" y="88" width="368" height="100" rx="8" fill="#fff" stroke="#e5e7eb"/><text x="432" y="112">Desvío vs presupuesto (12 m)</text><text x="432" y="160" font-size="34" font-weight="700" fill="#e5484d">−x %</text>
+    <rect x="800" y="88" width="368" height="100" rx="8" fill="#fff" stroke="#e5e7eb"/><text x="816" y="112">MWh perdidos por curtailment (12 m)</text><text x="816" y="160" font-size="34" font-weight="700" fill="#1b3139">≈ 60 k</text>
+  </g>
+  <rect x="32" y="204" width="1136" height="200" rx="8" fill="#fff" stroke="#e5e7eb"/>
+  <text x="48" y="228" font-size="13" font-weight="700" fill="#1b3139">Real vs presupuesto (todas las plantas)</text>
+  <polyline fill="none" stroke="#3e63dd" stroke-width="2.5" points="60,330 140,300 220,350 300,370 380,365 460,320 540,290 620,280 700,330 780,360 860,375 940,330 1020,300 1100,285"/>
+  <polyline fill="none" stroke="#8b8d98" stroke-width="2" stroke-dasharray="6 4" points="60,320 140,305 220,335 300,355 380,350 460,315 540,300 620,295 700,320 780,345 860,350 940,320 1020,305 1100,300"/>
+  <rect x="32" y="420" width="1136" height="196" rx="8" fill="#fff" stroke="#e5e7eb"/>
+  <text x="48" y="444" font-size="13" font-weight="700" fill="#1b3139">Pérdidas del último mes por causa</text>
+  <g>
+    <rect x="70" y="470" width="60" height="120" fill="#3e63dd"/><rect x="70" y="440" width="60" height="30" fill="#e5484d" opacity="0" />
+    <rect x="160" y="520" width="60" height="70" fill="#3e63dd"/><rect x="160" y="500" width="60" height="20" fill="#f76b15"/>
+    <rect x="250" y="490" width="60" height="100" fill="#3e63dd"/><rect x="250" y="470" width="60" height="20" fill="#30a46c"/>
+    <rect x="340" y="540" width="60" height="50" fill="#3e63dd"/><rect x="430" y="510" width="60" height="80" fill="#3e63dd"/>
+    <rect x="430" y="490" width="60" height="20" fill="#e5484d"/>
+  </g>
+  <text x="600" y="600" font-size="11" fill="#6b7280">Mockup ilustrativo del dashboard definido en dashboards/01_direccion_generacion.lvdash.json</text>
+</svg>

@@ -1,0 +1,273 @@
+{
+  "datasets": [
+    {
+      "name": "monthly",
+      "displayName": "Disponibilidad mensual",
+      "queryLines": [
+        "SELECT park_name, manufacturer, month_start, year_month, availability_month, availability_12m, guaranteed_availability,\n",
+        "       ld_accrued_usd, claim_eligible, chargeable_fault_h, force_majeure_h\n",
+        "FROM gold.mart_warranty_claims\n"
+      ]
+    },
+    {
+      "name": "claims",
+      "displayName": "Reclamos",
+      "queryLines": [
+        "SELECT * FROM gold.fn_reclamos_garantia(NULL)\n"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "garantia",
+      "displayName": "Garantía del fabricante",
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layout": [
+        {
+          "widget": {
+            "name": "garantia_w1",
+            "multilineTextboxSpec": {
+              "lines": [
+                "# Caso 5 · Disponibilidad contractual vs. garantía (97 %)",
+                "Cuándo reclamar al fabricante y cuánto. Dueño: Ramiro Llancaqueo (Mantenimiento) con Legal."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "garantia_w2",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "monthly",
+                  "fields": [
+                    {
+                      "name": "value",
+                      "expression": "SUM(`ld_accrued_usd`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "value",
+                  "displayName": "LD devengados (USD)"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "LD devengados (USD)"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 3,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "garantia_w3",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "monthly",
+                  "fields": [
+                    {
+                      "name": "value",
+                      "expression": "COUNT_IF(`claim_eligible`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "value",
+                  "displayName": "Meses con reclamo"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Meses con reclamo"
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 2,
+            "width": 3,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "garantia_w4",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "monthly",
+                  "fields": [
+                    {
+                      "name": "month_start",
+                      "expression": "`month_start`"
+                    },
+                    {
+                      "name": "Disponibilidad 12 m",
+                      "expression": "AVG(`availability_12m`)"
+                    },
+                    {
+                      "name": "manufacturer",
+                      "expression": "`manufacturer`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "month_start",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "month_start"
+                },
+                "y": {
+                  "fieldName": "Disponibilidad 12 m",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Disponibilidad 12 m"
+                },
+                "color": {
+                  "fieldName": "manufacturer",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "manufacturer"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Disponibilidad móvil 12 m por fabricante"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 5,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "garantia_w5",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "claims",
+                  "fields": [
+                    {
+                      "name": "park_name",
+                      "expression": "`park_name`"
+                    },
+                    {
+                      "name": "manufacturer",
+                      "expression": "`manufacturer`"
+                    },
+                    {
+                      "name": "year_month",
+                      "expression": "`year_month`"
+                    },
+                    {
+                      "name": "availability_12m",
+                      "expression": "`availability_12m`"
+                    },
+                    {
+                      "name": "shortfall_points",
+                      "expression": "`shortfall_points`"
+                    },
+                    {
+                      "name": "ld_accrued_usd",
+                      "expression": "`ld_accrued_usd`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "park_name",
+                    "displayName": "park_name"
+                  },
+                  {
+                    "fieldName": "manufacturer",
+                    "displayName": "manufacturer"
+                  },
+                  {
+                    "fieldName": "year_month",
+                    "displayName": "year_month"
+                  },
+                  {
+                    "fieldName": "availability_12m",
+                    "displayName": "availability_12m"
+                  },
+                  {
+                    "fieldName": "shortfall_points",
+                    "displayName": "shortfall_points"
+                  },
+                  {
+                    "fieldName": "ld_accrued_usd",
+                    "displayName": "ld_accrued_usd"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Meses reclamables"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 11,
+            "width": 6,
+            "height": 7
+          }
+        }
+      ]
+    }
+  ]
+}

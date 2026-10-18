@@ -1,0 +1,121 @@
+title: "Andes · Operación de parques"
+domain: Operación
+description: >-
+  Para jefes de parque y la Gerencia de Operaciones: generación diaria, pérdidas por causa (curtailment,
+  fallas, hielo, suciedad), clima y limpieza de paneles. Pregunta en español, como hablás en la sala de control.
+users: "Martín Quiroga (Gerente de Operaciones) y los 13 jefes de parque"
+tables:
+  - gold.v_park_daily
+  - gold.mart_generation_vs_budget
+  - gold.mart_panel_cleaning
+  - gold.fact_curtailment_hourly
+  - gold.dim_park
+  - gold.dim_weather
+  - gold.dim_date
+metric_views:
+  - gold.mv_generacion
+  - gold.mv_limpieza
+functions:
+  - gold.fn_explicar_desvio
+  - gold.fn_recomendacion_limpieza
+  - gold.fn_perdida_curtailment
+instructions: |
+  Sos el asistente de Operación de Andes Viento Austral (9 parques eólicos en Chubut y Santa Cruz, 4 solares en Jujuy y Catamarca).
+  - "Hoy" es el último día con datos: max(reading_date) de gold.v_park_daily. "Este mes" es el mes de ese día. Nunca uses current_date().
+  - Los usuarios nombran los parques por nombre ("Cañadón León", "Susques"): filtrá por park_name con ILIKE o por park_code (LEO, SUS...).
+  - Energía siempre en MWh con 1 decimal; porcentajes con 1 decimal. Curtailment = recorte = limitación de red = orden de CAMMESA.
+  - Para "¿por qué generó menos?" usá la función fn_explicar_desvio(parque, 'yyyy-MM'): es la cascada oficial.
+  - Para "¿hay que limpiar?" usá fn_recomendacion_limpieza. Las pérdidas por suciedad sólo existen en parques solares.
+  - Las fechas son días operativos locales (UTC-3). No mezcles parques eólicos y solares en factores de capacidad.
+  - Viento medio de un parque = v_park_daily.avg_wind_ms (anemómetros de las turbinas). dim_weather.wind_avg_ms es la
+    estación meteorológica: usala sólo si piden "la estación" o el pronóstico.
+  - fn_perdida_curtailment trae una fila por parque y una última fila 'TOTAL EMPRESA' con el total.
+  - fn_explicar_desvio es para UN parque y UN mes. Para el desvío de toda la empresa, de una región o de un año
+    sumá mart_generation_vs_budget: sum(actual_mwh) - sum(budget_p50_mwh) y sum(actual_mwh) / sum(budget_p50_mwh) - 1.
+  - El mes en curso es parcial (is_month_to_date = true): su presupuesto ya está prorrateado; avisalo al responder.
+  - El desvío % de un parque en un mes es mart_generation_vs_budget.variance_pct (o la fila 9 de fn_explicar_desvio).
+  - "Días de nevada / hielo / tormenta" = dim_weather.weather_condition ('Nevada', 'Hielo', ...), no la columna snow_cm.
+  - Limpiezas realizadas = mart_panel_cleaning.is_cleaning_end (un día por limpieza); is_cleaning_day marca todos los días de trabajo.
+  - Un desvío "en 2025" o "en el año" es el acumulado anual: sum(actual_mwh) / sum(budget_p50_mwh) - 1.
+  - En las funciones, para "todos los parques" pasá NULL (sin comillas), nunca el texto 'NULL'.
+sample_questions:
+  - "¿Cuánto generó cada parque el último mes contra el presupuesto?"
+  - "¿Por qué Cañadón León generó menos en julio 2025?"
+  - "¿Qué parques solares conviene limpiar hoy?"
+  - "¿Cuántos MWh perdimos por hielo este invierno?"
+examples:
+  - question: "Generación vs presupuesto del último mes por parque"
+    sql: |
+      SELECT park_name, round(actual_mwh, 1) AS real_mwh, round(budget_p50_mwh, 1) AS presupuesto_mwh,
+             round(variance_pct * 100, 1) AS desvio_pct
+      FROM ${catalog}.gold.mart_generation_vs_budget
+      WHERE month_start = (SELECT max(month_start) FROM ${catalog}.gold.mart_generation_vs_budget)
+      ORDER BY desvio_pct
+  - question: "¿Por qué Cañadón León generó menos en julio 2025?"
+    sql: "SELECT * FROM ${catalog}.gold.fn_explicar_desvio('Cañadón León', '2025-07')"
+  - question: "Pérdidas por causa en el año por parque eólico"
+    sql: |
+      SELECT park_name, round(sum(lost_curtailment_mwh), 1) AS curtailment_mwh, round(sum(lost_fault_mwh), 1) AS fallas_mwh,
+             round(sum(lost_maintenance_mwh), 1) AS mantenimiento_mwh, round(sum(lost_icing_mwh), 1) AS hielo_mwh
+      FROM ${catalog}.gold.v_park_daily
+      WHERE technology = 'Eólico' AND year(reading_date) = 2025
+      GROUP BY park_name ORDER BY curtailment_mwh DESC
+  - question: "Factor de capacidad mensual de los parques eólicos (metric view)"
+    sql: |
+      SELECT `Mes`, `Parque`, round(MEASURE(`Factor de capacidad`) * 100, 1) AS factor_capacidad_pct
+      FROM ${catalog}.gold.mv_generacion
+      WHERE `Tecnología` = 'Eólico' AND `Año` = 2025
+      GROUP BY ALL ORDER BY `Mes`, `Parque`
+  - question: "¿Qué parques solares conviene limpiar hoy?"
+    sql: "SELECT * FROM ${catalog}.gold.fn_recomendacion_limpieza(NULL)"
+  - question: "Días con hielo en palas por parque en 2025"
+    sql: |
+      SELECT park_code, count(*) AS dias_con_hielo, round(sum(lost_icing_mwh), 1) AS mwh_perdidos
+      FROM ${catalog}.gold.v_park_daily
+      WHERE year(reading_date) = 2025 AND lost_icing_mwh > 0
+      GROUP BY park_code ORDER BY dias_con_hielo DESC
+benchmarks:
+  - q: "¿Cuántos parques eólicos tiene la empresa?"
+    sql: "SELECT count(*) FROM ${catalog}.gold.dim_park WHERE technology = 'Eólico'"
+  - q: "¿Cuántos parques solares hay en cada provincia?"
+    sql: "SELECT province, count(*) AS parques FROM ${catalog}.gold.dim_park WHERE technology = 'Solar' GROUP BY province"
+  - q: "¿Cuál es el último día con datos?"
+    sql: "SELECT max(reading_date) FROM ${catalog}.gold.v_park_daily"
+  - q: "¿Cuánta energía generó la empresa en 2025 en MWh?"
+    sql: "SELECT round(sum(generated_mwh), 1) FROM ${catalog}.gold.v_park_daily WHERE year(reading_date) = 2025"
+  - q: "¿Qué parque generó más energía en 2025?"
+    sql: "SELECT park_name, round(sum(generated_mwh), 1) AS mwh FROM ${catalog}.gold.v_park_daily WHERE year(reading_date) = 2025 GROUP BY park_name ORDER BY mwh DESC LIMIT 1"
+  - q: "¿Cuál fue el desvío contra presupuesto de Cañadón León en julio 2025?"
+    sql: "SELECT round(variance_pct * 100, 1) AS desvio_pct FROM ${catalog}.gold.mart_generation_vs_budget WHERE park_code = 'LEO' AND year_month = '2025-07'"
+  - q: "¿Cuántos MWh perdió Cañadón León por curtailment en julio 2025?"
+    sql: "SELECT round(lost_curtailment_mwh, 1) FROM ${catalog}.gold.mart_generation_vs_budget WHERE park_code = 'LEO' AND year_month = '2025-07'"
+  - q: "¿Cuántos MWh se perdieron por hielo en julio 2025 en Cañadón León?"
+    sql: "SELECT round(lost_icing_mwh, 1) FROM ${catalog}.gold.mart_generation_vs_budget WHERE park_code = 'LEO' AND year_month = '2025-07'"
+  - q: "¿Qué parque tuvo el peor desvío contra presupuesto en el acumulado de 2025?"
+    sql: "SELECT park_name, round(sum(actual_mwh) / sum(budget_p50_mwh) - 1, 4) AS desvio FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2025 GROUP BY park_name ORDER BY desvio LIMIT 1"
+  - q: "Factor de capacidad de Pico Truncado Alto en 2025"
+    sql: "SELECT round(sum(generated_mwh) / sum(installed_mw * 24), 4) FROM ${catalog}.gold.v_park_daily WHERE park_code = 'PIC' AND year(reading_date) = 2025"
+  - q: "¿En qué mes de 2025 la empresa generó más?"
+    sql: "SELECT year_month, round(sum(generated_mwh), 1) AS mwh FROM ${catalog}.gold.v_park_daily WHERE year(reading_date) = 2025 GROUP BY year_month ORDER BY mwh DESC LIMIT 1"
+  - q: "¿Cuántos días con condición 'Nevada' tuvo Cañadón León en 2025?"
+    sql: "SELECT count(*) FROM ${catalog}.gold.dim_weather WHERE park_code = 'LEO' AND year(date) = 2025 AND weather_condition = 'Nevada'"
+  - q: "¿Cuál es la pérdida por suciedad de Susques Solar en 2025 en MWh?"
+    sql: "SELECT round(sum(soiling_lost_mwh), 1) FROM ${catalog}.gold.mart_panel_cleaning WHERE park_code = 'SUS' AND year(reading_date) = 2025"
+  - q: "¿Cuántas limpiezas de paneles se hicieron en 2025 por parque?"
+    sql: "SELECT p.park_name, count_if(c.is_cleaning_end) AS limpiezas FROM ${catalog}.gold.mart_panel_cleaning c JOIN ${catalog}.gold.dim_park p USING (park_code) WHERE year(c.reading_date) = 2025 GROUP BY p.park_name"
+  - q: "¿Qué parques solares hay que limpiar según el último día?"
+    sql: "SELECT park_name, recommendation FROM ${catalog}.gold.fn_recomendacion_limpieza(NULL) WHERE recommendation = 'LIMPIAR'"
+  - q: "Suciedad media de los paneles de Abra Pampa en septiembre 2025"
+    sql: "SELECT round(avg(soiling_loss_pct) * 100, 2) FROM ${catalog}.gold.mart_panel_cleaning WHERE park_code = 'ABR' AND date_format(reading_date, 'yyyy-MM') = '2025-09'"
+  - q: "¿Cuánta energía perdió la empresa por curtailment en 2025?"
+    sql: "SELECT round(sum(lost_curtailment_mwh), 1) FROM ${catalog}.gold.v_park_daily WHERE year(reading_date) = 2025"
+  - q: "¿Qué parque eólico tuvo más pérdidas por fallas en 2025?"
+    sql: "SELECT park_name, round(sum(lost_fault_mwh), 1) AS mwh FROM ${catalog}.gold.v_park_daily WHERE year(reading_date) = 2025 AND technology = 'Eólico' GROUP BY park_name ORDER BY mwh DESC LIMIT 1"
+  - q: "Generación diaria de Rawson Sur en la última semana con datos"
+    sql: "SELECT reading_date, round(generated_mwh, 1) AS mwh FROM ${catalog}.gold.v_park_daily WHERE park_code = 'RAW' AND reading_date > (SELECT max(reading_date) - 7 FROM ${catalog}.gold.v_park_daily) ORDER BY reading_date"
+  - q: "¿Cuál fue el viento medio de Garayalde en julio 2025?"
+    sql: "SELECT round(avg(avg_wind_ms), 2) FROM ${catalog}.gold.v_park_daily WHERE park_code = 'GAR' AND year_month = '2025-07'"
+  - q: "¿Cuántos días con condición 'Hielo' tuvo cada parque eólico en invierno 2025?"
+    sql: "SELECT p.park_name, count(*) AS dias FROM ${catalog}.gold.dim_weather w JOIN ${catalog}.gold.dim_park p USING (park_code) WHERE w.weather_condition = 'Hielo' AND w.date BETWEEN '2025-06-01' AND '2025-08-31' GROUP BY p.park_name"
+  - q: "Disponibilidad contractual promedio de Bahía Deseado en 2025"
+    sql: "SELECT round(avg(availability_contractual), 4) FROM ${catalog}.gold.v_park_daily WHERE park_code = 'DES' AND year(reading_date) = 2025"
