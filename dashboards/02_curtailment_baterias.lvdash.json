@@ -1,0 +1,453 @@
+{
+  "datasets": [
+    {
+      "name": "monthly",
+      "displayName": "Curtailment mensual",
+      "queryLines": [
+        "SELECT p.park_name, date_format(f.reading_date, 'yyyy-MM') AS year_month, trunc(f.reading_date, 'MM') AS month_start,\n",
+        "       sum(f.lost_curtailment_mwh) AS curtailed_mwh, sum(f.potential_mwh) AS potential_mwh,\n",
+        "       sum(f.lost_value_spot_usd) AS value_spot_usd, count_if(f.has_instruction) AS hours_with_order\n",
+        "FROM gold.fact_curtailment_hourly f JOIN gold.dim_park p USING (park_key)\n",
+        "GROUP BY ALL\n"
+      ]
+    },
+    {
+      "name": "hour_profile",
+      "displayName": "Perfil horario",
+      "queryLines": [
+        "SELECT hour(hour_local) AS hora_local, sum(lost_curtailment_mwh) AS curtailed_mwh, avg(spot_usd_mwh) AS spot_usd_mwh\n",
+        "FROM gold.fact_curtailment_hourly GROUP BY 1\n"
+      ]
+    },
+    {
+      "name": "battery",
+      "displayName": "Ranking de baterías (12 meses)",
+      "queryLines": [
+        "SELECT * FROM gold.fn_ranking_baterias(12)\n"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "curtailment",
+      "displayName": "Curtailment y baterías",
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layout": [
+        {
+          "widget": {
+            "name": "curtailment_w1",
+            "multilineTextboxSpec": {
+              "lines": [
+                "# Caso 1 · Energía perdida por curtailment",
+                "¿Cuántos MWh y USD perdimos porque CAMMESA nos hizo bajar potencia? ¿Dónde conviene una batería? Dueño: Diego Achával (CFO)."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "curtailment_w2",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "monthly",
+                  "fields": [
+                    {
+                      "name": "value",
+                      "expression": "SUM(`curtailed_mwh`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "value",
+                  "displayName": "MWh perdidos (total)"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "MWh perdidos (total)"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "curtailment_w3",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "monthly",
+                  "fields": [
+                    {
+                      "name": "value",
+                      "expression": "SUM(`curtailed_mwh`) / SUM(`potential_mwh`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "value",
+                  "displayName": "% del potencial",
+                  "format": {
+                    "type": "number-percent"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "% del potencial"
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 2,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "curtailment_w4",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "monthly",
+                  "fields": [
+                    {
+                      "name": "value",
+                      "expression": "SUM(`hours_with_order`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "value",
+                  "displayName": "Horas con orden de CAMMESA"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Horas con orden de CAMMESA"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 2,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "curtailment_w5",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "monthly",
+                  "fields": [
+                    {
+                      "name": "month_start",
+                      "expression": "`month_start`"
+                    },
+                    {
+                      "name": "MWh",
+                      "expression": "SUM(`curtailed_mwh`)"
+                    },
+                    {
+                      "name": "park_name",
+                      "expression": "`park_name`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "month_start",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "month_start"
+                },
+                "y": {
+                  "fieldName": "MWh",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "MWh"
+                },
+                "color": {
+                  "fieldName": "park_name",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "park_name"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "MWh perdidos por mes y parque"
+              },
+              "mark": {
+                "layout": "stack"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 5,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "curtailment_w6",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "hour_profile",
+                  "fields": [
+                    {
+                      "name": "hora_local",
+                      "expression": "`hora_local`"
+                    },
+                    {
+                      "name": "MWh",
+                      "expression": "SUM(`curtailed_mwh`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "hora_local",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "hora_local"
+                },
+                "y": {
+                  "fieldName": "MWh",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "MWh"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "¿A qué hora nos limitan? (MWh por hora local)"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 11,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "curtailment_w7",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "hour_profile",
+                  "fields": [
+                    {
+                      "name": "hora_local",
+                      "expression": "`hora_local`"
+                    },
+                    {
+                      "name": "USD/MWh",
+                      "expression": "AVG(`spot_usd_mwh`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "hora_local",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "hora_local"
+                },
+                "y": {
+                  "fieldName": "USD/MWh",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "USD/MWh"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Precio spot medio por hora (USD/MWh)"
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 11,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "curtailment_w8",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "battery",
+                  "fields": [
+                    {
+                      "name": "ranking",
+                      "expression": "`ranking`"
+                    },
+                    {
+                      "name": "park_name",
+                      "expression": "`park_name`"
+                    },
+                    {
+                      "name": "option_code",
+                      "expression": "`option_code`"
+                    },
+                    {
+                      "name": "battery_mwh",
+                      "expression": "`battery_mwh`"
+                    },
+                    {
+                      "name": "recovered_mwh",
+                      "expression": "`recovered_mwh`"
+                    },
+                    {
+                      "name": "recovered_value_usd",
+                      "expression": "`recovered_value_usd`"
+                    },
+                    {
+                      "name": "battery_capex_usd",
+                      "expression": "`battery_capex_usd`"
+                    },
+                    {
+                      "name": "simple_payback_years",
+                      "expression": "`simple_payback_years`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "ranking",
+                    "displayName": "ranking"
+                  },
+                  {
+                    "fieldName": "park_name",
+                    "displayName": "park_name"
+                  },
+                  {
+                    "fieldName": "option_code",
+                    "displayName": "option_code"
+                  },
+                  {
+                    "fieldName": "battery_mwh",
+                    "displayName": "battery_mwh"
+                  },
+                  {
+                    "fieldName": "recovered_mwh",
+                    "displayName": "recovered_mwh"
+                  },
+                  {
+                    "fieldName": "recovered_value_usd",
+                    "displayName": "recovered_value_usd"
+                  },
+                  {
+                    "fieldName": "battery_capex_usd",
+                    "displayName": "battery_capex_usd"
+                  },
+                  {
+                    "fieldName": "simple_payback_years",
+                    "displayName": "simple_payback_years"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Caso de inversión: repago simple por parque y tamaño de batería"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 17,
+            "width": 6,
+            "height": 7
+          }
+        }
+      ]
+    }
+  ]
+}

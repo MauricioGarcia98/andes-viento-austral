@@ -1,0 +1,387 @@
+{
+  "datasets": [
+    {
+      "name": "monthly",
+      "displayName": "Real vs presupuesto mensual",
+      "queryLines": [
+        "SELECT park_name, technology, month_start, year_month, actual_mwh, budget_p50_mwh, variance_pct,\n",
+        "       lost_curtailment_mwh, lost_fault_mwh, lost_maintenance_mwh, lost_icing_mwh, lost_soiling_mwh, resource_effect_mwh\n",
+        "FROM gold.mart_generation_vs_budget\n"
+      ]
+    },
+    {
+      "name": "last12",
+      "displayName": "Últimos 12 meses",
+      "queryLines": [
+        "SELECT sum(actual_mwh) AS actual_mwh, sum(budget_p50_mwh) AS budget_mwh,\n",
+        "       sum(actual_mwh) / sum(budget_p50_mwh) - 1 AS variance_pct,\n",
+        "       sum(lost_curtailment_mwh) AS curtailment_mwh\n",
+        "FROM gold.mart_generation_vs_budget\n",
+        "WHERE month_start > add_months((SELECT max(month_start) FROM gold.mart_generation_vs_budget), -12)\n"
+      ]
+    },
+    {
+      "name": "losses_last",
+      "displayName": "Pérdidas del último mes por parque",
+      "queryLines": [
+        "SELECT park_name, causa, mwh FROM (\n",
+        "  SELECT park_name, lost_curtailment_mwh AS curtailment, lost_fault_mwh AS fallas, lost_maintenance_mwh AS mantenimiento,\n",
+        "         lost_icing_mwh AS hielo, lost_soiling_mwh AS suciedad\n",
+        "  FROM gold.mart_generation_vs_budget\n",
+        "  WHERE month_start = (SELECT max(month_start) FROM gold.mart_generation_vs_budget)\n",
+        ") UNPIVOT (mwh FOR causa IN (curtailment, fallas, mantenimiento, hielo, suciedad))\n"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "resumen",
+      "displayName": "Generación vs. presupuesto",
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layout": [
+        {
+          "widget": {
+            "name": "resumen_w1",
+            "multilineTextboxSpec": {
+              "lines": [
+                "# Andes Viento Austral · Dirección",
+                "Generación real vs. presupuesto P50 aprobado y las causas del desvío. Dueña: Lucía Ferreyra (CEO)."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "resumen_w2",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "last12",
+                  "fields": [
+                    {
+                      "name": "value",
+                      "expression": "SUM(`actual_mwh`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "value",
+                  "displayName": "MWh generados (12 m)"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "MWh generados (12 m)"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "resumen_w3",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "last12",
+                  "fields": [
+                    {
+                      "name": "value",
+                      "expression": "SUM(`actual_mwh`) / SUM(`budget_mwh`) - 1"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "value",
+                  "displayName": "Desvío vs presupuesto (12 m)",
+                  "format": {
+                    "type": "number-percent"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Desvío vs presupuesto (12 m)"
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 2,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "resumen_w4",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "last12",
+                  "fields": [
+                    {
+                      "name": "value",
+                      "expression": "SUM(`curtailment_mwh`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "value",
+                  "displayName": "MWh perdidos por curtailment (12 m)"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "MWh perdidos por curtailment (12 m)"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 2,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "resumen_w5",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "monthly",
+                  "fields": [
+                    {
+                      "name": "month_start",
+                      "expression": "`month_start`"
+                    },
+                    {
+                      "name": "Real MWh",
+                      "expression": "SUM(`actual_mwh`)"
+                    },
+                    {
+                      "name": "Presupuesto MWh",
+                      "expression": "SUM(`budget_p50_mwh`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "month_start",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "month_start"
+                },
+                "y": {
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "fields": [
+                    {
+                      "fieldName": "Real MWh",
+                      "displayName": "Real MWh"
+                    },
+                    {
+                      "fieldName": "Presupuesto MWh",
+                      "displayName": "Presupuesto MWh"
+                    }
+                  ]
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Real vs presupuesto (todas las plantas)"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 5,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "resumen_w6",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "monthly",
+                  "fields": [
+                    {
+                      "name": "year_month",
+                      "expression": "`year_month`"
+                    },
+                    {
+                      "name": "Desvío MWh",
+                      "expression": "SUM(`actual_mwh` - `budget_p50_mwh`)"
+                    },
+                    {
+                      "name": "park_name",
+                      "expression": "`park_name`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "year_month",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "year_month"
+                },
+                "y": {
+                  "fieldName": "Desvío MWh",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Desvío MWh"
+                },
+                "color": {
+                  "fieldName": "park_name",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "park_name"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Desvío mensual por parque (MWh)"
+              },
+              "mark": {
+                "layout": "stack"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 11,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "resumen_w7",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "losses_last",
+                  "fields": [
+                    {
+                      "name": "park_name",
+                      "expression": "`park_name`"
+                    },
+                    {
+                      "name": "MWh",
+                      "expression": "SUM(`mwh`)"
+                    },
+                    {
+                      "name": "causa",
+                      "expression": "`causa`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "park_name",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "park_name"
+                },
+                "y": {
+                  "fieldName": "MWh",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "MWh"
+                },
+                "color": {
+                  "fieldName": "causa",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "causa"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Pérdidas del último mes por causa"
+              },
+              "mark": {
+                "layout": "stack"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 17,
+            "width": 6,
+            "height": 6
+          }
+        }
+      ]
+    }
+  ]
+}

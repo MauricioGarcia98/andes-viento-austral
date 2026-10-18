@@ -1,0 +1,349 @@
+{
+  "datasets": [
+    {
+      "name": "risk_now",
+      "displayName": "Turbinas en riesgo hoy",
+      "queryLines": [
+        "SELECT * FROM gold.fn_turbinas_en_riesgo(NULL)\n"
+      ]
+    },
+    {
+      "name": "health",
+      "displayName": "Salud diaria",
+      "queryLines": [
+        "SELECT reading_date, park_code, turbine_id, health_score, gearbox_residual_7d, vibration_ratio, risk_level,\n",
+        "       failure_within_30d\n",
+        "FROM gold.mart_turbine_health WHERE reading_date >= date_sub((SELECT max(reading_date) FROM gold.mart_turbine_health), 120)\n"
+      ]
+    },
+    {
+      "name": "lead",
+      "displayName": "Anticipación de las alertas",
+      "queryLines": [
+        "WITH f AS (SELECT DISTINCT turbine_id, next_major_failure_date FROM gold.mart_turbine_health\n",
+        "           WHERE next_major_failure_date IS NOT NULL)\n",
+        "SELECT f.turbine_id, f.next_major_failure_date,\n",
+        "       max(datediff(f.next_major_failure_date, h.reading_date)) AS dias_de_anticipacion\n",
+        "FROM f LEFT JOIN gold.mart_turbine_health h ON h.turbine_id = f.turbine_id AND h.risk_level = 'ALTO'\n",
+        "  AND h.reading_date BETWEEN date_sub(f.next_major_failure_date, 45) AND date_sub(f.next_major_failure_date, 1)\n",
+        "GROUP BY ALL\n"
+      ]
+    },
+    {
+      "name": "orders",
+      "displayName": "Órdenes correctivas mayores",
+      "queryLines": [
+        "SELECT date_format(created_date, 'yyyy-MM') AS year_month, component, count(*) AS ordenes,\n",
+        "       avg(downtime_hours) AS horas_parada, sum(total_cost_usd) AS costo_usd\n",
+        "FROM gold.fact_maintenance_order WHERE order_type = 'CORRECTIVA' AND severity = 'MAYOR' GROUP BY ALL\n"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "predictivo",
+      "displayName": "Mantenimiento predictivo",
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layout": [
+        {
+          "widget": {
+            "name": "predictivo_w1",
+            "multilineTextboxSpec": {
+              "lines": [
+                "# Caso 2 · Mantenimiento predictivo",
+                "Turbinas cuya multiplicadora o rodamientos calientan más que sus pares y vibran más que su historia. Dueño: Ramiro Llancaqueo (Jefe de Mantenimiento)."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "predictivo_w2",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "risk_now",
+                  "fields": [
+                    {
+                      "name": "park_code",
+                      "expression": "`park_code`"
+                    },
+                    {
+                      "name": "turbine_tag",
+                      "expression": "`turbine_tag`"
+                    },
+                    {
+                      "name": "health_score",
+                      "expression": "`health_score`"
+                    },
+                    {
+                      "name": "risk_level",
+                      "expression": "`risk_level`"
+                    },
+                    {
+                      "name": "suspected_component",
+                      "expression": "`suspected_component`"
+                    },
+                    {
+                      "name": "gearbox_residual_7d",
+                      "expression": "`gearbox_residual_7d`"
+                    },
+                    {
+                      "name": "vibration_ratio",
+                      "expression": "`vibration_ratio`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "park_code",
+                    "displayName": "park_code"
+                  },
+                  {
+                    "fieldName": "turbine_tag",
+                    "displayName": "turbine_tag"
+                  },
+                  {
+                    "fieldName": "health_score",
+                    "displayName": "health_score"
+                  },
+                  {
+                    "fieldName": "risk_level",
+                    "displayName": "risk_level"
+                  },
+                  {
+                    "fieldName": "suspected_component",
+                    "displayName": "suspected_component"
+                  },
+                  {
+                    "fieldName": "gearbox_residual_7d",
+                    "displayName": "gearbox_residual_7d"
+                  },
+                  {
+                    "fieldName": "vibration_ratio",
+                    "displayName": "vibration_ratio"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Turbinas en riesgo (último día)"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "predictivo_w3",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "health",
+                  "fields": [
+                    {
+                      "name": "reading_date",
+                      "expression": "`reading_date`"
+                    },
+                    {
+                      "name": "Health score",
+                      "expression": "MIN(`health_score`)"
+                    },
+                    {
+                      "name": "turbine_id",
+                      "expression": "`turbine_id`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "reading_date",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "reading_date"
+                },
+                "y": {
+                  "fieldName": "Health score",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Health score"
+                },
+                "color": {
+                  "fieldName": "turbine_id",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "turbine_id"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Health score (últimos 120 días)"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 8,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "predictivo_w4",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lead",
+                  "fields": [
+                    {
+                      "name": "turbine_id",
+                      "expression": "`turbine_id`"
+                    },
+                    {
+                      "name": "next_major_failure_date",
+                      "expression": "`next_major_failure_date`"
+                    },
+                    {
+                      "name": "dias_de_anticipacion",
+                      "expression": "`dias_de_anticipacion`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "turbine_id",
+                    "displayName": "turbine_id"
+                  },
+                  {
+                    "fieldName": "next_major_failure_date",
+                    "displayName": "next_major_failure_date"
+                  },
+                  {
+                    "fieldName": "dias_de_anticipacion",
+                    "displayName": "dias_de_anticipacion"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "¿Con cuántos días de anticipación avisó el modelo? (null = falla sorpresa)"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 14,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "predictivo_w5",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "orders",
+                  "fields": [
+                    {
+                      "name": "year_month",
+                      "expression": "`year_month`"
+                    },
+                    {
+                      "name": "USD",
+                      "expression": "SUM(`costo_usd`)"
+                    },
+                    {
+                      "name": "component",
+                      "expression": "`component`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "year_month",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "year_month"
+                },
+                "y": {
+                  "fieldName": "USD",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "USD"
+                },
+                "color": {
+                  "fieldName": "component",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "component"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Costo de correctivas mayores (USD)"
+              },
+              "mark": {
+                "layout": "stack"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 20,
+            "width": 6,
+            "height": 6
+          }
+        }
+      ]
+    }
+  ]
+}
