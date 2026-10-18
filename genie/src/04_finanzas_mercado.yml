@@ -31,6 +31,8 @@ instructions: |
   - Capex de baterías: usá fn_ranking_baterias (una fila por parque y opción). mart_curtailment_battery es mensual:
     sumar battery_capex_usd ahí multiplica la inversión por la cantidad de meses.
   - Repago = simple_payback_years (años). ranking es sólo la posición.
+  - fn_perdida_curtailment trae una fila por parque y una última fila 'TOTAL EMPRESA' con el total.
+  - Órdenes de CAMMESA = horas con has_instruction = true (el Motivo es NULL cuando no hay orden).
   - El curtailment que asume el presupuesto es un porcentaje: mart_generation_vs_budget.assumed_curtailment (0,04 = 4 %).
   - En las funciones, para "todos los parques" pasá NULL (sin comillas), nunca el texto 'NULL'.
 sample_questions:
@@ -40,7 +42,7 @@ sample_questions:
   - "¿Por qué subió el costo de mantenimiento en dólares en 2024 si la inflación bajó?"
 examples:
   - question: "¿Cuántos MWh y USD perdimos por curtailment en 2025?"
-    sql: "SELECT * FROM ${catalog}.gold.fn_perdida_curtailment(NULL, '2025-01-01', '2025-12-31') ORDER BY curtailed_mwh DESC"
+    sql: "SELECT * FROM ${catalog}.gold.fn_perdida_curtailment(NULL, '2025-01-01', '2025-12-31')"
   - question: "¿En qué parque conviene invertir en baterías?"
     sql: "SELECT * FROM ${catalog}.gold.fn_ranking_baterias(12) ORDER BY ranking LIMIT 5"
   - question: "Curtailment mensual en % del potencial (metric view)"
@@ -67,7 +69,7 @@ benchmarks:
   - q: "¿Creció el curtailment de 2023 a 2025?"
     sql: "SELECT year(reading_date) AS anio, round(sum(lost_curtailment_mwh), 1) FROM ${catalog}.gold.fact_curtailment_hourly WHERE year(reading_date) BETWEEN 2023 AND 2025 GROUP BY 1 ORDER BY 1"
   - q: "¿Qué parque perdió más energía por curtailment en 2025?"
-    sql: "SELECT park_code, round(sum(lost_curtailment_mwh), 1) AS mwh FROM ${catalog}.gold.fact_curtailment_hourly WHERE year(reading_date) = 2025 GROUP BY park_code ORDER BY mwh DESC LIMIT 1"
+    sql: "SELECT p.park_name, round(sum(f.lost_curtailment_mwh), 1) AS mwh FROM ${catalog}.gold.fact_curtailment_hourly f JOIN ${catalog}.gold.dim_park p ON p.park_key = f.park_key WHERE year(f.reading_date) = 2025 GROUP BY p.park_name ORDER BY mwh DESC LIMIT 1"
   - q: "¿Qué porcentaje del potencial perdió San Julián Meseta por curtailment en 2025?"
     sql: "SELECT round(sum(lost_curtailment_mwh) / sum(potential_mwh), 4) FROM ${catalog}.gold.fact_curtailment_hourly WHERE park_code = 'SJU' AND year(reading_date) = 2025"
   - q: "Valor a precio spot del curtailment de 2025"

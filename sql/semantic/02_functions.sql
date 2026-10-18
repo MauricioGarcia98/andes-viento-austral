@@ -15,9 +15,9 @@ CREATE OR REPLACE FUNCTION ${gold}.fn_perdida_curtailment(
     p_hasta STRING DEFAULT NULL COMMENT 'Fecha final yyyy-MM-dd (incluida); NULL = hasta el último dato')
 RETURNS TABLE (park_name STRING, curtailed_mwh DOUBLE, curtailed_pct_of_potential DOUBLE,
                value_at_spot_usd DOUBLE, value_at_ppa_usd DOUBLE, hours_with_order BIGINT)
-COMMENT 'Energía perdida por curtailment (MWh), % del potencial y su valor a spot y a precio PPA, por parque'
+COMMENT 'Energía perdida por curtailment (MWh), % del potencial y su valor a spot y a precio PPA, por parque. La última fila (park_name = TOTAL EMPRESA) es el total de todos los parques: no la sumes con las otras'
 RETURN
-    SELECT p.park_name,
+    SELECT coalesce(p.park_name, 'TOTAL EMPRESA'),
            round(sum(f.lost_curtailment_mwh), 1),
            round(sum(f.lost_curtailment_mwh) / sum(f.potential_mwh), 4),
            round(sum(f.lost_value_spot_usd), 0),
@@ -29,7 +29,8 @@ RETURN
     WHERE (coalesce(upper(trim(p_parque)), 'NULL') IN ('NULL', '', 'TODOS') OR upper(p.park_code) = upper(p_parque) OR lower(p.park_name) = lower(p_parque))
       AND (try_to_date(p_desde) IS NULL OR f.reading_date >= to_date(p_desde))
       AND (try_to_date(p_hasta) IS NULL OR f.reading_date <= to_date(p_hasta))
-    GROUP BY p.park_name;
+    GROUP BY ROLLUP (p.park_name)
+    ORDER BY grouping(p.park_name), 2 DESC;
 
 CREATE OR REPLACE FUNCTION ${gold}.fn_ranking_baterias(
     p_meses INT DEFAULT 12 COMMENT 'Cantidad de meses hacia atrás para valorizar (default 12)')

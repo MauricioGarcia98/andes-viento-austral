@@ -99,8 +99,8 @@ dimensions:
   - name: Hora local
     expr: hour(hour_local)
   - name: Motivo
-    expr: coalesce(grid_reason, 'SIN_ORDEN')
-    comment: "RESTRICCION_TRANSPORTE, MANTENIMIENTO_ET, CONTROL_FRECUENCIA"
+    expr: grid_reason
+    comment: "RESTRICCION_TRANSPORTE, MANTENIMIENTO_ET, CONTROL_FRECUENCIA; NULL = hora sin orden de CAMMESA"
 measures:
   - name: Energía perdida por curtailment (MWh)
     expr: SUM(lost_curtailment_mwh)

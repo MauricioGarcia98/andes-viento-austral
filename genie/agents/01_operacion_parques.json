@@ -76,6 +76,7 @@
             "- Para \"¿por qué generó menos?\" usá la función fn_explicar_desvio(parque, 'yyyy-MM'): es la cascada oficial.\n",
             "- Para \"¿hay que limpiar?\" usá fn_recomendacion_limpieza. Las pérdidas por suciedad sólo existen en parques solares.\n",
             "- Las fechas son días operativos locales (UTC-3). No mezcles parques eólicos y solares en factores de capacidad.\n",
+            "- fn_perdida_curtailment trae una fila por parque y una última fila 'TOTAL EMPRESA' con el total.\n",
             "- El desvío % de un parque en un mes es mart_generation_vs_budget.variance_pct (o la fila 9 de fn_explicar_desvio).\n",
             "- \"Días de nevada / hielo / tormenta\" = dim_weather.weather_condition ('Nevada', 'Hielo', ...), no la columna snow_cm.\n",
             "- Limpiezas realizadas = mart_panel_cleaning.is_cleaning_end (un día por limpieza); is_cleaning_day marca todos los días de trabajo.\n",
@@ -195,6 +196,20 @@
               "format": "SQL",
               "content": [
                 "SELECT park_name, recommendation FROM ${catalog}.gold.fn_recomendacion_limpieza(NULL) WHERE recommendation = 'LIMPIAR'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "32d93051f3ad0dd6ab161d58e98e8f2f",
+          "question": [
+            "¿Cuántos parques solares hay en cada provincia?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT province, count(*) AS parques FROM ${catalog}.gold.dim_park WHERE technology = 'Solar' GROUP BY province"
               ]
             }
           ]
@@ -377,20 +392,6 @@
               "format": "SQL",
               "content": [
                 "SELECT p.park_name, count(*) AS dias FROM ${catalog}.gold.dim_weather w JOIN ${catalog}.gold.dim_park p USING (park_code) WHERE w.weather_condition = 'Hielo' AND w.date BETWEEN '2025-06-01' AND '2025-08-31' GROUP BY p.park_name"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "c032f6352c84a59b8708de1b40faaba2",
-          "question": [
-            "¿Cuántos parques solares hay y en qué provincias?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT province, count(*) AS parques FROM ${catalog}.gold.dim_park WHERE technology = 'Solar' GROUP BY province"
               ]
             }
           ]

@@ -27,6 +27,7 @@ instructions: |
   - Para "¿por qué generó menos?" usá la función fn_explicar_desvio(parque, 'yyyy-MM'): es la cascada oficial.
   - Para "¿hay que limpiar?" usá fn_recomendacion_limpieza. Las pérdidas por suciedad sólo existen en parques solares.
   - Las fechas son días operativos locales (UTC-3). No mezcles parques eólicos y solares en factores de capacidad.
+  - fn_perdida_curtailment trae una fila por parque y una última fila 'TOTAL EMPRESA' con el total.
   - El desvío % de un parque en un mes es mart_generation_vs_budget.variance_pct (o la fila 9 de fn_explicar_desvio).
   - "Días de nevada / hielo / tormenta" = dim_weather.weather_condition ('Nevada', 'Hielo', ...), no la columna snow_cm.
   - Limpiezas realizadas = mart_panel_cleaning.is_cleaning_end (un día por limpieza); is_cleaning_day marca todos los días de trabajo.
@@ -71,7 +72,7 @@ examples:
 benchmarks:
   - q: "¿Cuántos parques eólicos tiene la empresa?"
     sql: "SELECT count(*) FROM ${catalog}.gold.dim_park WHERE technology = 'Eólico'"
-  - q: "¿Cuántos parques solares hay y en qué provincias?"
+  - q: "¿Cuántos parques solares hay en cada provincia?"
     sql: "SELECT province, count(*) AS parques FROM ${catalog}.gold.dim_park WHERE technology = 'Solar' GROUP BY province"
   - q: "¿Cuál es el último día con datos?"
     sql: "SELECT max(reading_date) FROM ${catalog}.gold.v_park_daily"

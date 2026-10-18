@@ -31,7 +31,10 @@ instructions: |
     La garantía es 97 %; las horas de ruta cortada por nieve son fuerza mayor y no cuentan.
   - Disponibilidad de la flota o de un año = MEASURE(`Disponibilidad contractual`) sin agrupar por parque. Nunca dividas ni promedies una MEASURE.
   - "Horas de falla" sin más = fact_availability_daily.fault_h (todas). "Imputables" (chargeable_fault_h) sólo para garantía.
-  - dim_turbine tiene una fila 'desconocida' con turbine_key = -1: excluila al contar turbinas.
+  - Contar turbinas: count(DISTINCT turbine_id) FROM dim_turbine WHERE is_current AND turbine_key <> -1 (es SCD2: hay una fila por versión).
+  - Al unir hechos con dim_turbine por turbine_key NO filtres is_current: la clave apunta a la versión vigente en ese momento.
+    Para ver el nombre actual, uní por turbine_id con la versión is_current.
+  - Componentes (códigos): GEARBOX = multiplicadora, MAIN_BEARING = rodamiento principal, GENERATOR_BEARING = rodamiento del generador.
   - En las funciones, para "todos los parques" pasá NULL (sin comillas), nunca el texto 'NULL'.
 sample_questions:
   - "¿Qué turbinas tienen riesgo alto de falla hoy?"
