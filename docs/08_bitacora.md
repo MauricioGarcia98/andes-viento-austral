@@ -234,6 +234,29 @@ Corrida #3 en dev (`run_id 486286601686508`, `scale_factor = 0.1`, serverless de
 | `quality_gate` | 18 | 10 chequeos + ratio de cuarentena |
 | **total (suma)** | **2566** | ≈ 43 min; el reloj real es parecido porque las tareas van en serie salvo governance ∥ semantic |
 
+**Prod** (`andes_viento`, run `149706943546422`): 12/12 SUCCESS con tiempos parecidos (generate 484 s, bronze 515 s,
+silver_reference 125 s porque esta vez no hubo cola: es la diferencia entre correr solo o con otra corrida al lado).
+
+**Job diario** (`andes-viento-daily`, run `662896490980765`): `generate_next_day` 92 s (genera el 2026-10-01 de las
+11 fuentes) → `run_pipeline` 722 s, que dispara el e2e con `generate=false`:
+
+| tarea | segundos | nota |
+|---|---:|---|
+| `setup` | 26 | |
+| `should_generate` | 1 | outcome `false` |
+| `generate_data` | — | **EXCLUDED** por la condición: así tiene que ser |
+| `bronze_ingest` | 118 | corre igual gracias a `run_if: NONE_FAILED`; Auto Loader sólo lee los archivos nuevos |
+| `silver_reference` | 104 | |
+| `silver_telemetry` | 63 | `_insert_only`: sólo filas nuevas |
+| `gold_dimensions` | 52 | |
+| `gold_facts` | 64 | incremental por watermark + `replaceWhere` |
+| `gold_marts` | 67 | los marts se recalculan completos (son chicos) |
+| `governance` | 202 | la tarea más cara del incremental: se podría saltear si no cambió el diccionario |
+| `semantic_layer` | 33 | |
+| `quality_gate` | 20 | OK |
+
+Resultado: `v_park_daily` llega al 2026-10-01 en los 13 parques. Un día nuevo cuesta ~12 min contra ~43 de la carga
+completa; casi todo es costo fijo (arranque de serverless y gobierno), no volumen.
 
 ## Cómo reparar sin correr todo de nuevo
 
