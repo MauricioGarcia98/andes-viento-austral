@@ -14,7 +14,7 @@
 | 2019-2020 | Crisis: cepo, pesificación de contratos viejos, pandemia. Se frenan inversiones. | El CMMS viejo exporta `dd/MM/yyyy HH:mm` hasta que lo migran en 2024. |
 | 2021 | Diversificación al **sol**: compra 4 parques en la Puna jujeña y Catamarca (1,2 millones de paneles). | Polvo, agua escasa y parques a 3.700 m; datos por satélite (VSAT). |
 | 2023 | **Cañadón León** entra en servicio... justo cuando la línea de 500 kV que saca la energía de la Patagonia se satura. Devaluación del 13 de diciembre (el dólar oficial pasa de ~366 a ~800). | El **curtailment** crece año a año; los costos en pesos explotan. |
-| 2025 | Repotenciación: Hanse actualiza el firmware a **HT-OS 5.0** y agrega 3 sensores (detector de hielo, partículas en aceite, acelerómetro de torre). Julio 2025: ola polar, mantenimiento de la ET Santa Cruz Norte y una multiplicadora rota en Cañadón León. | *Schema drift* en el JSON del SCADA. El famoso "**¿por qué Cañadón León generó 15 % menos en julio?**" (−15,4 % medido a SF 0,1). |
+| 2025 | Repotenciación: Hanse actualiza el firmware a **HT-OS 5.0** y agrega 3 sensores (detector de hielo, partículas en aceite, acelerómetro de torre). Julio 2025: ola polar, mantenimiento de la ET Santa Cruz Norte y una multiplicadora rota en Cañadón León. | *Schema drift* en el JSON del SCADA. El famoso "**¿por qué Cañadón León generó 18 % menos en julio?**" (−18,4 % medido a SF 0,1). |
 
 ## La flota (a scale_factor = 1)
 

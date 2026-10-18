@@ -16,7 +16,7 @@ que se responde con Agent mode.
 | **Datos** | SCADA (viento, potencia, estado), instrucciones de CAMMESA, órdenes del CMMS, clima, presupuesto P50. |
 | **Tablas** | `gold.mart_generation_vs_budget` (cascada mensual), `gold.v_park_daily`, `gold.fn_explicar_desvio()` |
 | **Dashboard** | `Andes · Dirección · Generación vs presupuesto` |
-| **Genie** | Agent mode: "¿Por qué Cañadón León generó 15 % menos que el presupuesto en julio 2025?" (real a SF 0,1: −15,4 %) → ver [genie/agent_mode.md](genie/agent_mode.md) |
+| **Genie** | Agent mode: "¿Por qué Cañadón León generó 18 % menos que el presupuesto en julio 2025?" (real a SF 0,1: −18,4 %) → ver [genie/agent_mode.md](genie/agent_mode.md) |
 
 La identidad que lo hace posible:
 ```

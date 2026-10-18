@@ -149,7 +149,7 @@ TEMP_DIURNAL = {"PATAGONIA": 5.0, "NOA": 10.0}   # día-noche (en la Puna la amp
 # La historia que tiene que aparecer en los datos (y que Genie debe encontrar)
 # =============================================================================
 STORY = {
-    # Agent mode: "¿por qué Cañadón León generó 15 % menos en julio 2025? (guionado para ~18 %; a SF 0,1 medido −15,4 %)"
+    # Agent mode: "¿por qué Cañadón León generó 18 % menos en julio 2025?" (medido a SF 0,1: −18,4 %)
     "leo_july_2025": {
         "park": "LEO",
         "cold_wave": (date(2025, 7, 3), date(2025, 7, 5)),       # ola polar: hielo en palas
