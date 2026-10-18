@@ -29,7 +29,8 @@ métrica que no existe, un grano confuso). La skill `andes-genie-agent-authoring
 | **Andes · Finanzas y mercado** | Comercial | CFO, Riesgo, CEO | `mart_generation_vs_budget`, `mart_curtailment_battery`, `fact_curtailment_hourly`, `fact_maintenance_order`, `dim_park`, `dim_date`, `v_park_price_month`, `mv_curtailment`, `mv_generacion` | `fn_ranking_baterias`, `fn_perdida_curtailment` | 21 |
 
 Configuración versionada: [`genie/src/*.yml`](../genie/src) (fuente) → [`genie/agents/*.json`](../genie/agents)
-(`serialized_space`). Resultados de la evaluación: [genie/resultados_benchmarks.md](genie/resultados_benchmarks.md).
+(`serialized_space`). Resultados de la evaluación: [genie/resultados_benchmarks.md](genie/resultados_benchmarks.md) — **85/86 (98,8 %)** en la
+ronda final; recorrido 0 % → 74 % → 91 % → 93 % → 98,8 % (ver R11-R16 en la [bitácora](08_bitacora.md)).
 
 > ⚠️ **Funciones confiables sin parámetros `DATE`.** Si una función certificada tiene un parámetro `DATE`, el deploy
 > por API funciona, pero **todas** las preguntas del agent fallan con `INVALID_CERTIFIED_ANSWER_FUNCTION_EXCEPTION ...

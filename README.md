@@ -136,10 +136,20 @@ Detalle tarea por tarea y los errores que aparecieron: [docs/08_bitacora.md](doc
 `Andes · Operación de parques` · `Andes · Mantenimiento predictivo` · `Andes · Comercial PPA` · `Andes · Finanzas y mercado`
 (los de dev llevan el sufijo `[dev]`). Se usan desde la plataforma, sobre las tablas gold, metric views y funciones.
 
-<!-- GENIE_RATE -->
+**Evaluación final (86 benchmarks, `scripts/genie_eval.py`, dev): 85/86 = 98,8 %**
+
+| agent | benchmarks | aciertos |
+|---|---:|---:|
+| Operación de parques | 22 | 21 |
+| Mantenimiento predictivo | 22 | 22 |
+| Comercial PPA | 21 | 21 |
+| Finanzas y mercado | 21 | 21 |
+
+El único ❌ es una respuesta correcta en otro formato (códigos de parque en vez de nombres): Genie no es determinístico.
 
 Evolución real de la evaluación (`scripts/genie_eval.py`, mismas 86 preguntas): **0 %** (parámetro `DATE`, R11) →
-**74 %** → **91 %** (arreglos de instrucciones, metric views y funciones) → ver la tabla de arriba.
+**74 %** → **91 %** → **93 %** → **98,8 %** (instrucciones, metric views, funciones a prueba de LLM, ejemplos SQL y
+qué función certificada va en cada agent: R11-R16).
 Detalle por pregunta: [docs/genie/resultados_benchmarks.md](docs/genie/resultados_benchmarks.md).
 
 
