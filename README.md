@@ -156,12 +156,13 @@ Detalle por pregunta: [docs/genie/resultados_benchmarks.md](docs/genie/resultado
 
 ## 🚀 Replicarlo desde cero
 
-Hay dos caminos y llegan al mismo lugar. Los dos explican cada paso: qué hace, por qué, cómo verificarlo y qué hacer
+Hay dos caminos para desplegarlo (y un tercero para construirlo vos) y llegan al mismo lugar. Las tres guías explican cada paso: qué hace, por qué, cómo verificarlo y qué hacer
 si falla.
 
 | camino | para quién | guía |
 |---|---|---|
 | 🖱️ **Desde la web** | nunca usaste Databricks o no querés instalar nada | [docs/11_guia_desde_la_web.md](docs/11_guia_desde_la_web.md) |
+| 🛠️ **Construirlo vos, desde un repo vacío** | querés dominar Databricks, GitHub y CI/CD escribiendo cada archivo (sin IA) | [construir/](construir/README.md): 25 capítulos + puntos de control `etapa-01`...`etapa-19` |
 | ⌨️ **Por terminal** | querés correr los tests locales, desplegar a prod y configurar CI/CD | [docs/10_despliegue_y_cicd.md](docs/10_despliegue_y_cicd.md) |
 
 El resumen por terminal (cada línea está explicada en la guía):
@@ -230,6 +231,7 @@ python scripts/run_local.py --scale-factor 0.03 --start 2025-06-25 --end 2025-07
 ├── scripts/                       # build_governance, build_dashboards, build_genie, deploy_genie, genie_ask, genie_eval
 ├── tests/                         # pytest + Spark/Delta local
 ├── learning/                      # 21 módulos
+├── construir/                     # curso: construirlo desde un repo vacío (25 capítulos)
 └── docs/                          # 20 documentos + ADRs + diagramas + animaciones
 ```
 </details>

@@ -6,6 +6,8 @@
 >
 > ¿Preferís no usar la terminal? Seguí la [guía desde la web](11_guia_desde_la_web.md). Llegás al mismo lugar.
 >
+> ¿Querés **escribirlo vos** en lugar de desplegar el código terminado? Seguí el curso [construir/](../construir/README.md).
+>
 > ¿No entendés una palabra? Está en el [glosario](15_glosario.md) (sección "Conceptos de la plataforma").
 
 ## El mapa: qué vas a tener al final

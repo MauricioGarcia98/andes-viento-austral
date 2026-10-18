@@ -29,6 +29,7 @@ Todo lo demás: [15 · Glosario](15_glosario.md).
 | **entender de qué se trata** (sin código) | [01 · La empresa](01_la_empresa.md) → [03 · Casos de negocio](03_casos_de_negocio.md) → [12 · Genie](12_genie.md) |
 | **tenerlo funcionando en tu Databricks, sin terminal** | [11 · Guía desde la web](11_guia_desde_la_web.md) |
 | **tenerlo funcionando, con terminal** (incluye tests locales y CI/CD) | [10 · Replicar desde cero](10_despliegue_y_cicd.md) |
+| **construirlo vos desde un repo vacío, sin IA** (curso de 25 capítulos) | [construir/](../construir/README.md) |
 | **saber cómo se construyó, paso a paso** | [17 · Cómo se construyó](17_como_se_construyo.md) |
 | **saber cómo se probó** | [18 · Pruebas](18_pruebas.md) |
 | **mantenerlo andando** (datos diarios, fallas, cuota de tablas) | [19 · Operación diaria](19_operacion_diaria.md) |
@@ -84,3 +85,4 @@ Scientist y SRE. Qué decide cada uno y por qué: [02 · Roles y decisiones](02_
 | 17 | [Cómo se construyó](17_como_se_construyo.md) | la cronología, etapa por etapa |
 | 18 | [Pruebas](18_pruebas.md) | las 7 capas de pruebas y sus resultados reales |
 | 19 | [Operación diaria](19_operacion_diaria.md) | datos diarios, fallas, cambios, cuota de tablas |
+| — | [Curso: construilo vos](../construir/README.md) | de un repo vacío al proyecto completo, con puntos de control (`etapa-01`...`etapa-19`) |
