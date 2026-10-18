@@ -6,6 +6,8 @@ lenguaje que usan los analistas, Databricks SQL y Genie. Python sólo orquesta.
 
 from __future__ import annotations
 
+import hashlib
+import re
 from pathlib import Path
 
 from pyspark.sql import SparkSession
@@ -72,9 +74,43 @@ def split_statements(sql: str) -> list[str]:
     return out
 
 
+_VIEW_RE = re.compile(r"^\s*CREATE\s+OR\s+REPLACE\s+VIEW\s+([\w.`]+)", re.IGNORECASE)
+
+
+def view_name(stmt: str) -> str | None:
+    """Nombre de la vista si la sentencia es un CREATE OR REPLACE VIEW (también metric views)."""
+    m = _VIEW_RE.match(stmt)
+    return m.group(1).replace("`", "") if m else None
+
+
+def fingerprint(stmt: str) -> str:
+    return hashlib.sha256(" ".join(stmt.split()).encode("utf-8")).hexdigest()
+
+
 def run_sql_file(spark: SparkSession, cfg: ProjectConfig, path: Path) -> None:
+    """Corre un script. Las vistas sólo se recrean si cambió su definición.
+
+    Error real (bitácora R14): cada CREATE OR REPLACE VIEW crea un objeto nuevo y deja el viejo
+    "borrado" ~7 días, y Unity Catalog lo cuenta en la cuota de 500 tablas de Free Edition.
+    Con 10 vistas y un job diario eso eran ~70 objetos fantasma por target.
+    """
+    fp_table = cfg.table("ops", "sql_fingerprints")
+    known: dict[str, str] | None = None
     for stmt in split_statements(render(path.read_text(encoding="utf-8"), cfg)):
+        name = view_name(stmt)
+        if name is None:
+            spark.sql(stmt)
+            continue
+        if known is None:
+            spark.sql(f"CREATE TABLE IF NOT EXISTS {fp_table} (object_name STRING, sha256 STRING, updated_at TIMESTAMP) USING DELTA")
+            known = {r.object_name: r.sha256 for r in spark.table(fp_table).collect()}
+        sha = fingerprint(stmt)
+        if known.get(name) == sha and spark.catalog.tableExists(name):
+            continue
         spark.sql(stmt)
+        spark.sql(f"DELETE FROM {fp_table} WHERE object_name = '{name}'")
+        spark.sql(f"INSERT INTO {fp_table} VALUES ('{name}', '{sha}', current_timestamp())")
+        known[name] = sha
 
 
 def run_sql_folder(spark: SparkSession, cfg: ProjectConfig, folder: str, skip_errors: bool = False) -> list[str]:

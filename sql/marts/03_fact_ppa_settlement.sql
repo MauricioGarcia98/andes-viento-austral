@@ -42,37 +42,44 @@ contract_month AS (
            max(n_source_parks) AS n_source_parks
     FROM alloc
     GROUP BY ALL
+),
+sf AS (
+    -- Un mes abierto (el job diario ya trajo días del mes en curso) no se liquida: el faltante
+    -- queda NULL y la proyección vive en mart_ppa_forecast. Si no, 1 día entregado contra el mes
+    -- entero comprometido parece un faltante enorme.
+    SELECT cm.*, s.spot_avg_usd_mwh,
+           cm.month_end <= (SELECT d FROM last_day_data) AS is_closed,
+           CASE WHEN cm.month_end <= (SELECT d FROM last_day_data)
+                THEN greatest(cm.committed_mwh * (1 - cm.tolerance_pct) - cm.delivered_mwh, 0) END AS shortfall
+    FROM contract_month cm
+    LEFT JOIN spot s USING (month_start)
 )
 SELECT
-    cast(date_format(cm.month_start, 'yyyyMMdd') AS INT)               AS month_date_key,
-    cm.contract_key,
-    cm.contract_id,
-    cm.client_name,
-    cm.sector,
-    cm.month_start,
-    date_format(cm.month_start, 'yyyy-MM')                             AS year_month,
-    cm.month_end <= (SELECT d FROM last_day_data)                      AS is_closed_month,
-    round(cm.committed_mwh, 2)                                         AS committed_mwh,
-    round(cm.committed_mwh * (1 - cm.tolerance_pct), 2)                AS min_required_mwh,
-    round(cm.delivered_mwh, 2)                                         AS delivered_mwh,
-    round(cm.delivered_mwh / cm.committed_mwh, 4)                      AS compliance_pct,
-    round(greatest(cm.committed_mwh * (1 - cm.tolerance_pct) - cm.delivered_mwh, 0), 2) AS shortfall_mwh,
-    cm.price_usd_mwh,
-    cm.penalty_usd_mwh,
-    cm.tolerance_pct,
-    round(cm.delivered_mwh * cm.price_usd_mwh, 2)                      AS revenue_usd,
-    round(s.spot_avg_usd_mwh, 2)                                       AS spot_avg_usd_mwh,
-    round(greatest(cm.committed_mwh * (1 - cm.tolerance_pct) - cm.delivered_mwh, 0) * cm.penalty_usd_mwh, 2)
-                                                                       AS penalty_cost_usd,
-    round(greatest(cm.committed_mwh * (1 - cm.tolerance_pct) - cm.delivered_mwh, 0) * s.spot_avg_usd_mwh * 1.05, 2)
-                                                                       AS spot_cover_cost_usd,
+    cast(date_format(month_start, 'yyyyMMdd') AS INT)                  AS month_date_key,
+    contract_key,
+    contract_id,
+    client_name,
+    sector,
+    month_start,
+    date_format(month_start, 'yyyy-MM')                                AS year_month,
+    is_closed                                                          AS is_closed_month,
+    round(committed_mwh, 2)                                            AS committed_mwh,
+    round(committed_mwh * (1 - tolerance_pct), 2)                      AS min_required_mwh,
+    round(delivered_mwh, 2)                                            AS delivered_mwh,
+    round(delivered_mwh / committed_mwh, 4)                            AS compliance_pct,
+    round(shortfall, 2)                                                AS shortfall_mwh,
+    price_usd_mwh,
+    penalty_usd_mwh,
+    tolerance_pct,
+    round(delivered_mwh * price_usd_mwh, 2)                            AS revenue_usd,
+    round(spot_avg_usd_mwh, 2)                                         AS spot_avg_usd_mwh,
+    round(shortfall * penalty_usd_mwh, 2)                              AS penalty_cost_usd,
+    round(shortfall * spot_avg_usd_mwh * 1.05, 2)                      AS spot_cover_cost_usd,
     CASE
-        WHEN cm.delivered_mwh >= cm.committed_mwh * (1 - cm.tolerance_pct) THEN 'CUMPLE'
-        WHEN s.spot_avg_usd_mwh * 1.05 < cm.penalty_usd_mwh THEN 'COMPRAR_SPOT'
+        WHEN NOT is_closed THEN 'MES_ABIERTO'
+        WHEN shortfall = 0 THEN 'CUMPLE'
+        WHEN spot_avg_usd_mwh * 1.05 < penalty_usd_mwh THEN 'COMPRAR_SPOT'
         ELSE 'PAGAR_PENALIDAD'
     END                                                                AS best_option,
-    round(least(greatest(cm.committed_mwh * (1 - cm.tolerance_pct) - cm.delivered_mwh, 0) * cm.penalty_usd_mwh,
-                greatest(cm.committed_mwh * (1 - cm.tolerance_pct) - cm.delivered_mwh, 0) * s.spot_avg_usd_mwh * 1.05), 2)
-                                                                       AS best_option_cost_usd
-FROM contract_month cm
-LEFT JOIN spot s USING (month_start);
+    round(least(shortfall * penalty_usd_mwh, shortfall * spot_avg_usd_mwh * 1.05), 2) AS best_option_cost_usd
+FROM sf;

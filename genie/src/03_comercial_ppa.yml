@@ -25,6 +25,7 @@ instructions: |
   - Datos de contacto y precios son confidenciales: si salen enmascarados es por permisos, no es un error.
   - Volumen comprometido de la cartera: sumá dim_contract.committed_mwh_month (is_current, status 'VIGENTE', contract_key <> -1).
     No lo sumes desde v_contract_park_month: ahí cada contrato aparece una vez por parque de origen.
+  - El mes en curso no se liquida (best_option = 'MES_ABIERTO', faltante NULL): para "¿vamos a llegar?" usá fn_proyeccion_ppa.
   - "Penalidades" en montos = best_option_cost_usd de fact_ppa_settlement (USD), no cantidad de meses.
 sample_questions:
   - "¿Vamos a llegar al volumen comprometido este mes con cada cliente?"

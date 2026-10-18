@@ -228,6 +228,35 @@ y del sensor de suciedad sin intervención.
   "a mano" en el catálogo dura hasta la próxima corrida del job. Por eso CI despliega siempre desde git.
 </details>
 
+<details open>
+<summary><b>R14 · "Llegaste al 85 % de 500 tablas" con sólo ~180 tablas vivas</b></summary>
+
+- **Qué pasó:** Databricks mandó dos mails (80 % y 85 % de la cuota *Table per Metastore*). Contando
+  `information_schema.tables` había ~180 tablas propias. La diferencia: **Unity Catalog también cuenta los objetos
+  borrados mientras están en retención (~7 días, los que lista `SHOW TABLES DROPPED IN ...`)**:
+  - los catálogos de proyectos viejos que borramos (`apd`, `andes_pruebas`, `workspace.*`: ~146);
+  - **cada `CREATE OR REPLACE VIEW`** (también las metric views) crea un objeto nuevo y deja el anterior "borrado":
+    `SHOW TABLES DROPPED IN andes_viento_dev.gold` mostró `mv_curtailment` 3 veces, 31 objetos en total. Con 10
+    vistas por corrida y un job diario eran ~70 fantasmas por target.
+  - un reset con `full_refresh=true` borra y recrea todas las tablas: +58 fantasmas de golpe.
+- **Arreglo:** `run_sql_file` guarda una huella (sha256) de cada vista en `ops.sql_fingerprints` y **sólo la recrea si
+  cambió la definición**. Los fantasmas que ya existen se purgan solos cuando vence la retención.
+- **Lección:** en Free Edition la cuota es un recurso más, como la plata. Evitá `full_refresh` salvo que haga falta,
+  no recrees lo que no cambió y medí con `SHOW TABLES DROPPED`, no sólo con `information_schema`.
+</details>
+
+<details open>
+<summary><b>R15 · El mes en curso aparecía como un faltante de USD 1,4 M</b></summary>
+
+- **Qué pasó:** el job diario trajo el 2026-10-01. `fact_ppa_settlement` liquidó octubre con 1 día entregado contra el
+  mes entero comprometido (faltante enorme) y `mart_generation_vs_budget` comparó 1 día real contra el presupuesto del
+  mes completo (−97 %). Lo encontró la evaluación de Genie: "¿mes con mayor costo de faltantes?" pasó a ser 2026-10.
+- **Arreglo:** el mes abierto no se liquida (`best_option = 'MES_ABIERTO'`, faltante NULL; la proyección vive en
+  `mart_ppa_forecast`) y el presupuesto del mes en curso se prorratea por días con datos (`is_month_to_date`).
+- **Lección:** la carga histórica nunca ve meses parciales; el incremental sí. Probá el job diario antes de dar por
+  bueno un mart mensual.
+</details>
+
 ## Tiempos reales por tarea
 
 Corrida #3 en dev (`run_id 486286601686508`, `scale_factor = 0.1`, serverless de Free Edition): **12/12 SUCCESS**.

@@ -112,3 +112,14 @@ SELECT `x;y` FROM t -- fin; de línea
     assert len(stmts) == 3
     assert stmts[0].endswith("'uno; dos \\' tres'")
     assert "a: b; c" in stmts[1]
+
+
+def test_view_name_and_fingerprint():
+    from andes_viento.gold.marts import fingerprint, view_name
+
+    assert view_name("CREATE OR REPLACE VIEW cat.gold.mv_x\nWITH METRICS AS $$ x $$") == "cat.gold.mv_x"
+    assert view_name("  create or replace view `cat`.`gold`.`v_y` AS SELECT 1") == "cat.gold.v_y"
+    assert view_name("CREATE OR REPLACE TABLE cat.gold.t AS SELECT 1") is None
+    # espacios y saltos de línea no cambian la huella; el contenido sí
+    assert fingerprint("SELECT  1\n") == fingerprint("SELECT 1")
+    assert fingerprint("SELECT 1") != fingerprint("SELECT 2")

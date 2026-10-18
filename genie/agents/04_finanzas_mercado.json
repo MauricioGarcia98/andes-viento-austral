@@ -81,6 +81,9 @@
             "  sumar battery_capex_usd ahí multiplica la inversión por la cantidad de meses.\n",
             "- Repago = simple_payback_years (años). ranking es sólo la posición.\n",
             "- fn_perdida_curtailment trae una fila por parque y una última fila 'TOTAL EMPRESA' con el total.\n",
+            "- fn_explicar_desvio es para UN parque y UN mes. Para el desvío de toda la empresa, de una región o de un año\n",
+            "  sumá mart_generation_vs_budget: sum(actual_mwh) - sum(budget_p50_mwh) y sum(actual_mwh) / sum(budget_p50_mwh) - 1.\n",
+            "- El mes en curso es parcial (is_month_to_date = true): su presupuesto ya está prorrateado; avisalo al responder.\n",
             "- Órdenes de CAMMESA = horas con has_instruction = true (el Motivo es NULL cuando no hay orden).\n",
             "- El curtailment que asume el presupuesto es un porcentaje: mart_generation_vs_budget.assumed_curtailment (0,04 = 4 %).\n",
             "- En las funciones, para \"todos los parques\" pasá NULL (sin comillas), nunca el texto 'NULL'."

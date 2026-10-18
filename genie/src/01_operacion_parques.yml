@@ -30,6 +30,9 @@ instructions: |
   - Viento medio de un parque = v_park_daily.avg_wind_ms (anemómetros de las turbinas). dim_weather.wind_avg_ms es la
     estación meteorológica: usala sólo si piden "la estación" o el pronóstico.
   - fn_perdida_curtailment trae una fila por parque y una última fila 'TOTAL EMPRESA' con el total.
+  - fn_explicar_desvio es para UN parque y UN mes. Para el desvío de toda la empresa, de una región o de un año
+    sumá mart_generation_vs_budget: sum(actual_mwh) - sum(budget_p50_mwh) y sum(actual_mwh) / sum(budget_p50_mwh) - 1.
+  - El mes en curso es parcial (is_month_to_date = true): su presupuesto ya está prorrateado; avisalo al responder.
   - El desvío % de un parque en un mes es mart_generation_vs_budget.variance_pct (o la fila 9 de fn_explicar_desvio).
   - "Días de nevada / hielo / tormenta" = dim_weather.weather_condition ('Nevada', 'Hielo', ...), no la columna snow_cm.
   - Limpiezas realizadas = mart_panel_cleaning.is_cleaning_end (un día por limpieza); is_cleaning_day marca todos los días de trabajo.
