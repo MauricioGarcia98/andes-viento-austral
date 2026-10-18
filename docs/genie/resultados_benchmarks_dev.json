@@ -9,18 +9,18 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT COUNT(DISTINCT `park_code`) AS parques_eolicos\nFROM `andes_viento_dev`.`gold`.`dim_park`\nWHERE `technology` ILIKE '%Eólico%' AND `park_code` IS NOT NULL",
+  "genie_sql": "SELECT COUNT(*) AS cantidad_parques_eolicos\nFROM `andes_viento_dev`.`gold`.`dim_park`\nWHERE `technology` ILIKE '%Eólico%' AND `technology` IS NOT NULL",
   "genie_rows": [
    [
     "9"
    ]
   ],
-  "genie_text": "La empresa tiene **9 parques eólicos** según el registro actual. Este número se basa en la cantidad de códigos de parque únicos con tecnología eólica.",
+  "genie_text": "La empresa tiene **9 parques eólicos** según la información disponible. Este número corresponde a los parques identificados con tecnología eólica en el registro actual.",
   "match": true
  },
  {
   "agent": "01_operacion_parques",
-  "question": "¿Cuántos parques solares hay y en qué provincias?",
+  "question": "¿Cuántos parques solares hay en cada provincia?",
   "expected_sql": "SELECT province, count(*) AS parques FROM andes_viento_dev.gold.dim_park WHERE technology = 'Solar' GROUP BY province",
   "expected": [
    [
@@ -33,16 +33,19 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT COUNT(*) AS cantidad_parques_solares, COLLECT_LIST(park_name) AS parques, COLLECT_LIST(province) AS provincias\nFROM andes_viento_dev.gold.dim_park\nWHERE technology = 'Solar' AND park_name IS NOT NULL AND province IS NOT NULL;",
+  "genie_sql": "SELECT `province`, COUNT(`park_code`) AS parques_solares\nFROM `andes_viento_dev`.`gold`.`dim_park`\nWHERE `technology` ILIKE '%Solar%'\n  AND `province` IS NOT NULL\n  AND `park_code` IS NOT NULL\nGROUP BY `province`\nORDER BY parques_solares DESC",
   "genie_rows": [
    [
-    "4",
-    "[\"Tinogasta Sol\",\"Fiambalá Solar\",\"Susques Solar\",\"Abra Pampa Solar\"]",
-    "[\"Catamarca\",\"Catamarca\",\"Jujuy\",\"Jujuy\"]"
+    "Jujuy",
+    "2"
+   ],
+   [
+    "Catamarca",
+    "2"
    ]
   ],
-  "genie_text": "Hay **4 parques solares**: Tinogasta Sol, Fiambalá Solar, Susques Solar y Abra Pampa Solar. Estos parques están ubicados en las provincias de **Catamarca** y **Jujuy**.",
-  "match": false
+  "genie_text": "En la provincia de **Jujuy** hay **2 parques solares** y en **Catamarca** también hay **2 parques solares**. No se muestran parques solares en otras provincias en los datos consultados.",
+  "match": true
  },
  {
   "agent": "01_operacion_parques",
@@ -73,13 +76,13 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT round(MEASURE(`Energía generada (MWh)`), 1) AS energia_generada_mwh\nFROM andes_viento_dev.gold.mv_generacion\nWHERE `Año` = 2025\nGROUP BY ALL",
+  "genie_sql": "SELECT ROUND(SUM(`actual_mwh`), 1) AS energia_generada_mwh\nFROM `andes_viento_dev`.`gold`.`mart_generation_vs_budget`\nWHERE `year` = 2025 AND `actual_mwh` IS NOT NULL",
   "genie_rows": [
    [
-    "814178.4"
+    "818386.3"
    ]
   ],
-  "genie_text": "La empresa generó **814.178,4 MWh** de energía en el año 2025. Este valor corresponde al total acumulado para ese año según los datos disponibles.",
+  "genie_text": "La empresa generó **818.386,3 MWh** de energía en el año 2025. Este valor corresponde al total acumulado de todos los parques durante ese año.",
   "match": true
  },
  {
@@ -93,14 +96,14 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "WITH ranked AS (\n  SELECT \n    park_name, \n    ROUND(SUM(generated_mwh), 1) AS total_mwh,\n    RANK() OVER (ORDER BY SUM(generated_mwh) DESC) AS rank\n  FROM andes_viento_dev.gold.v_park_daily\n  WHERE year(reading_date) = 2025 AND generated_mwh IS NOT NULL AND park_name IS NOT NULL\n  GROUP BY park_name\n)\nSELECT park_name, total_mwh\nFROM ranked\nWHERE rank = 1",
+  "genie_sql": "WITH ranked AS (\n  SELECT park_name, round(sum(generated_mwh), 1) AS energia_mwh,\n         RANK() OVER (ORDER BY sum(generated_mwh) DESC) AS rank\n  FROM andes_viento_dev.gold.v_park_daily\n  WHERE year(reading_date) = 2025\n  GROUP BY park_name\n)\nSELECT park_name, energia_mwh\nFROM ranked\nWHERE rank = 1",
   "genie_rows": [
    [
     "San Julián Meseta",
     "91572.8"
    ]
   ],
-  "genie_text": "El parque que generó más energía en 2025 fue **San Julián Meseta** con un total de **91.572,8 MWh**. Este valor representa la mayor generación anual entre los parques analizados para ese año.",
+  "genie_text": "El parque que generó más energía en 2025 fue **San Julián Meseta** con **91.572,8 MWh**. Solo se muestra un parque en los resultados, por lo que no hay otros parques con mayor generación en ese año.",
   "match": true
  },
  {
@@ -168,6 +171,14 @@
     "51707.0",
     "60500.0",
     "263"
+   ],
+   [
+    "TOTAL EMPRESA",
+    "819.0",
+    "0.1181",
+    "51707.0",
+    "60500.0",
+    "263"
    ]
   ],
   "genie_text": "",
@@ -189,7 +200,7 @@
     "350.0"
    ]
   ],
-  "genie_text": "En julio de 2025, en el parque **Cañadón León**, se perdieron **350,0 MWh** por hielo. Este valor corresponde a la suma total de energía perdida por este motivo en ese mes.",
+  "genie_text": "En julio de 2025, en el parque **Cañadón León** se perdieron **350,0 MWh** por hielo. Este valor representa la pérdida total reportada por esta causa en ese mes.",
   "match": true
  },
  {
@@ -203,14 +214,14 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT park_name, ROUND((try_divide(SUM(actual_mwh),SUM(budget_p50_mwh)) - 1) * 100, 1) AS desvio_pct\nFROM andes_viento_dev.gold.mart_generation_vs_budget\nWHERE year = 2025 AND actual_mwh IS NOT NULL AND budget_p50_mwh IS NOT NULL\nGROUP BY park_name\nORDER BY desvio_pct ASC\nLIMIT 1",
+  "genie_sql": "WITH acumulado AS (\n  SELECT \n    park_name, \n    SUM(actual_mwh) AS total_actual_mwh, \n    SUM(budget_p50_mwh) AS total_budget_mwh,\n    (try_divide(SUM(actual_mwh),SUM(budget_p50_mwh)) - 1) AS desvio_acumulado\n  FROM andes_viento_dev.gold.mart_generation_vs_budget\n  WHERE year = 2025 AND actual_mwh IS NOT NULL AND budget_p50_mwh IS NOT NULL\n  GROUP BY park_name\n)\nSELECT park_name, ROUND(desvio_acumulado * 100, 1) AS desvio_pct\nFROM (\n  SELECT *, RANK() OVER (ORDER BY desvio_acumulado ASC) AS rank\n  FROM acumulado\n)\nWHERE rank = 1",
   "genie_rows": [
    [
     "Abra Pampa Solar",
     "-5.8"
    ]
   ],
-  "genie_text": "El parque con el peor desvío contra presupuesto en el acumulado de 2025 fue **Abra Pampa Solar**, con un desvío de **-5.8%** respecto al presupuesto. Solo se muestra un parque en los datos, por lo que este representa el mayor desvío negativo registrado.",
+  "genie_text": "El parque con el peor desvío acumulado contra presupuesto en 2025 fue **Abra Pampa Solar**, con un desvío de **-5.8%**. Esto indica que la generación estuvo un 5.8% por debajo del presupuesto para ese año.",
   "match": true
  },
  {
@@ -223,7 +234,7 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT `Mes`, `Parque`, round(MEASURE(`Factor de capacidad`) * 100, 1) AS factor_capacidad_pct\nFROM andes_viento_dev.gold.mv_generacion\nWHERE `Tecnología` = 'Eólico' AND `Año` = 2025 AND `Parque` ILIKE '%Pico Truncado Alto%'\nGROUP BY ALL\nORDER BY `Mes` ASC",
+  "genie_sql": "SELECT `Mes`, `Parque`, round(MEASURE(`Factor de capacidad`) * 100, 1) AS factor_capacidad_pct\nFROM andes_viento_dev.gold.mv_generacion\nWHERE `Parque` ILIKE '%Pico Truncado Alto%' AND `Año` = 2025\nGROUP BY ALL\nORDER BY `Mes` ASC",
   "genie_rows": [
    [
     "2025-01",
@@ -251,7 +262,7 @@
     "40.7"
    ]
   ],
-  "genie_text": "El factor de capacidad mensual de **Pico Truncado Alto** en 2025 varió entre **32.0%** y **68.5%**. El valor más bajo se registró en junio (32.0%) y el más alto en noviembre (68.5%). En general, los meses de invierno muestran factores de capacidad más bajos que los de verano y primavera.",
+  "genie_text": "El factor de capacidad mensual de **Pico Truncado Alto** en 2025 varió entre **32.0%** y **68.5%**. Los valores más altos se registraron en marzo, noviembre y diciembre, mientras que el más bajo fue en junio. El promedio anual muestra una tendencia a la baja en invierno y al alza en primavera y fin de año.",
   "match": true
  },
  {
@@ -265,14 +276,14 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "WITH monthly_generation AS (\n  SELECT `year_month`, SUM(`actual_mwh`) AS total_mwh,\n         RANK() OVER (ORDER BY SUM(`actual_mwh`) DESC) AS rk\n  FROM `andes_viento_dev`.`gold`.`mart_generation_vs_budget`\n  WHERE `year` = 2025 AND `year_month` IS NOT NULL AND `actual_mwh` IS NOT NULL\n  GROUP BY `year_month`\n)\nSELECT `year_month`, ROUND(total_mwh, 1) AS total_mwh\nFROM monthly_generation\nWHERE rk = 1",
+  "genie_sql": "WITH monthly AS (\n  SELECT year_month, SUM(actual_mwh) AS total_mwh\n  FROM andes_viento_dev.gold.mart_generation_vs_budget\n  WHERE year = 2025 AND actual_mwh IS NOT NULL\n  GROUP BY year_month\n)\nSELECT year_month, ROUND(total_mwh, 1) AS total_mwh\nFROM (\n  SELECT *, RANK() OVER (ORDER BY total_mwh DESC) AS rk\n  FROM monthly\n)\nWHERE rk = 1",
   "genie_rows": [
    [
     "2025-11",
     "84504.1"
    ]
   ],
-  "genie_text": "En **noviembre de 2025**, la empresa generó la mayor cantidad de energía, con un total de **84.504,1 MWh**. Esta fue la cifra más alta registrada en cualquier mes de ese año.",
+  "genie_text": "En **noviembre de 2025**, la empresa generó la mayor cantidad de energía, con un total de **84.504,1 MWh**. Esta cifra es la más alta registrada en cualquier mes de 2025 según los datos disponibles.",
   "match": true
  },
  {
@@ -285,13 +296,13 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT COUNT(DISTINCT `reading_date`) AS `dias_nevada`\nFROM `andes_viento_dev`.`gold`.`v_park_daily`\nWHERE `park_name` ILIKE '%Cañadón León%'\n  AND `weather_condition` ILIKE '%Nevada%'\n  AND YEAR(`reading_date`) = 2025",
+  "genie_sql": "SELECT COUNT(*) AS dias_nevada\nFROM `andes_viento_dev`.`gold`.`v_park_daily`\nWHERE `park_name` ILIKE '%Cañadón León%'\n  AND `weather_condition` ILIKE '%Nevada%'\n  AND YEAR(`reading_date`) = 2025",
   "genie_rows": [
    [
     "4"
    ]
   ],
-  "genie_text": "El parque Cañadón León tuvo **4 días** con condición 'Nevada' en 2025 según los datos disponibles.",
+  "genie_text": "Cañadón León tuvo **4 días** con condición 'Nevada' en 2025. Este valor representa la cantidad total de días con esa condición climática en ese año para el parque consultado.",
   "match": true
  },
  {
@@ -304,13 +315,13 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT round(sum(`lost_soiling_mwh`), 1) AS perdida_suciedad_mwh\nFROM `andes_viento_dev`.`gold`.`v_park_daily`\nWHERE `park_name` ILIKE '%Susques%' AND year(`reading_date`) = 2025 AND `lost_soiling_mwh` IS NOT NULL",
+  "genie_sql": "SELECT round(sum(soiling_lost_mwh), 1) AS perdida_suciedad_mwh\nFROM andes_viento_dev.gold.mart_panel_cleaning\nWHERE park_code = 'SUS' AND year(reading_date) = 2025",
   "genie_rows": [
    [
     "1743.3"
    ]
   ],
-  "genie_text": "La pérdida por suciedad de **Susques Solar** en 2025 fue de **1.743,3 MWh**. Este valor representa la energía total no generada por suciedad durante ese año.",
+  "genie_text": "La pérdida por suciedad de **Susques Solar** en **2025** fue de **1.743,3 MWh**.",
   "match": true
  },
  {
@@ -336,7 +347,7 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT `park_code`, COUNT(*) AS `limpiezas_realizadas` FROM `andes_viento_dev`.`gold`.`mart_panel_cleaning` WHERE `is_cleaning_end` = true AND YEAR(`reading_date`) = 2025 GROUP BY `park_code` ORDER BY `limpiezas_realizadas` DESC",
+  "genie_sql": "SELECT park_code, COUNT(*) AS limpiezas_realizadas\nFROM andes_viento_dev.gold.mart_panel_cleaning\nWHERE is_cleaning_end = true AND year(reading_date) = 2025\nGROUP BY park_code\nORDER BY limpiezas_realizadas DESC",
   "genie_rows": [
    [
     "TIN",
@@ -355,7 +366,7 @@
     "4"
    ]
   ],
-  "genie_text": "En 2025, los parques con más limpiezas de paneles fueron **TIN**, **SUS** y **ABR**, cada uno con **5 limpiezas** realizadas. El parque **FIA** tuvo **4 limpiezas** en el mismo período. Todos los parques solares realizaron entre 4 y 5 limpiezas durante el año.",
+  "genie_text": "En 2025, los parques con más limpiezas de paneles realizadas fueron **TIN**, **SUS** y **ABR** con **5 limpiezas** cada uno, seguidos por **FIA** con **4 limpiezas**. Todos los parques listados realizaron al menos 4 limpiezas en el año. La cantidad de limpiezas fue similar entre los parques, sin grandes diferencias.",
   "match": true
  },
  {
@@ -425,30 +436,15 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT `Fecha`, MEASURE(`Suciedad media (%)`) AS suciedad_media_pct\nFROM andes_viento_dev.gold.mv_limpieza\nWHERE `Parque` ILIKE '%Abra Pampa%' AND `Mes` = '2025-09'\nGROUP BY ALL\nORDER BY `Fecha` ASC",
+  "genie_sql": "SELECT `Parque`, `Mes`, MEASURE(`Suciedad media (%)`) AS suciedad_media_pct\nFROM andes_viento_dev.gold.mv_limpieza\nWHERE `Parque` ILIKE '%Abra Pampa%' AND `Mes` = '2025-09'\nGROUP BY ALL",
   "genie_rows": [
    [
-    "2025-09-01",
-    "0.0223"
-   ],
-   [
-    "2025-09-02",
-    "0.0243"
-   ],
-   [
-    "2025-09-03",
-    "0.026"
-   ],
-   [
-    "2025-09-04",
-    "0.0244"
-   ],
-   [
-    "2025-09-05",
-    "0.0267"
+    "Abra Pampa Solar",
+    "2025-09",
+    "0.04875333333333333"
    ]
   ],
-  "genie_text": "La suciedad media de los paneles en Abra Pampa durante septiembre 2025 aumentó progresivamente a lo largo del mes. El valor más bajo fue **2,2%** el 1 de septiembre y el más alto fue **18,9%** el 30 de septiembre. Ejemplos de valores incluyen:\n- **2,2%** el 1 de septiembre\n- **3,3%** el 15 de septiembre\n- **6,5%** el 22 de septiembre\n- **8,3%** el 24 de septiembre\n- **18,9%** el 30 de septiembre\n\nSe observa un incremento sostenido de la suciedad, especialmente en la última semana del mes.",
+  "genie_text": "La suciedad media de los paneles en el parque **Abra Pampa Solar** durante septiembre 2025 fue de **4,9%**. Solo se reporta un valor para ese mes y parque.",
   "match": true
  },
  {
@@ -464,14 +460,6 @@
   "genie_sql": "SELECT * FROM `andes_viento_dev`.`gold`.`fn_perdida_curtailment`(p_parque => 'NULL', p_desde => '2025-01-01', p_hasta => '2025-12-31')",
   "genie_rows": [
    [
-    "San Julián Meseta",
-    "2834.6",
-    "0.0297",
-    "26298.0",
-    "209395.0",
-    "468"
-   ],
-   [
     "Cañadón León",
     "3719.5",
     "0.0377",
@@ -480,20 +468,20 @@
     "693"
    ],
    [
-    "Cerro Arenales",
-    "656.1",
-    "0.0075",
-    "5886.0",
-    "42360.0",
-    "232"
+    "San Julián Meseta",
+    "2834.6",
+    "0.0297",
+    "26298.0",
+    "209395.0",
+    "468"
    ],
    [
-    "Rawson Sur",
-    "129.1",
-    "0.0023",
-    "1913.0",
-    "7791.0",
-    "133"
+    "Pico Truncado Alto",
+    "1347.8",
+    "0.0146",
+    "12139.0",
+    "88870.0",
+    "344"
    ],
    [
     "Bahía Deseado",
@@ -502,10 +490,18 @@
     "9861.0",
     "70621.0",
     "291"
+   ],
+   [
+    "Pampa del Castillo",
+    "819.8",
+    "0.0128",
+    "7701.0",
+    "52454.0",
+    "276"
    ]
   ],
   "genie_text": "",
-  "match": false
+  "match": true
  },
  {
   "agent": "01_operacion_parques",
@@ -518,14 +514,14 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "WITH ranked AS (\n  SELECT park_name, round(sum(lost_fault_mwh), 1) AS fallas_mwh,\n         RANK() OVER (ORDER BY sum(lost_fault_mwh) DESC) AS rk\n  FROM andes_viento_dev.gold.v_park_daily\n  WHERE technology = 'Eólico' AND year(reading_date) = 2025\n  GROUP BY park_name\n)\nSELECT park_name, fallas_mwh\nFROM ranked\nWHERE rk = 1",
+  "genie_sql": "WITH ranked AS (\n  SELECT park_name, round(sum(lost_fault_mwh), 1) AS fallas_mwh,\n         RANK() OVER (ORDER BY sum(lost_fault_mwh) DESC) AS rk\n  FROM andes_viento_dev.gold.v_park_daily\n  WHERE technology = 'Eólico' AND year(reading_date) = 2025 AND lost_fault_mwh IS NOT NULL\n  GROUP BY park_name\n)\nSELECT park_name, fallas_mwh\nFROM ranked\nWHERE rk = 1",
   "genie_rows": [
    [
     "Pico Truncado Alto",
     "5810.5"
    ]
   ],
-  "genie_text": "El parque eólico con más pérdidas por fallas en 2025 fue **Pico Truncado Alto**, con **5810.5 MWh** perdidos por fallas. Este valor representa el mayor total de pérdidas por fallas entre los parques eólicos analizados para ese año.",
+  "genie_text": "El parque eólico con más pérdidas por fallas en 2025 fue **Pico Truncado Alto**, con un total de **5810.5 MWh** perdidos. Este valor representa la mayor cantidad de energía perdida por fallas entre los parques eólicos analizados para ese año.",
   "match": true
  },
  {
@@ -555,7 +551,7 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT reading_date, round(generated_mwh, 1) AS generacion_mwh\nFROM `andes_viento_dev`.`gold`.`v_park_daily`\nWHERE park_name ILIKE '%Rawson Sur%'\n  AND reading_date BETWEEN date_sub((SELECT max(reading_date) FROM `andes_viento_dev`.`gold`.`v_park_daily`), 6)\n      AND (SELECT max(reading_date) FROM `andes_viento_dev`.`gold`.`v_park_daily`)\nORDER BY reading_date ASC",
+  "genie_sql": "SELECT reading_date, round(generated_mwh, 1) AS generacion_mwh\nFROM andes_viento_dev.gold.v_park_daily\nWHERE park_name ILIKE '%Rawson Sur%'\n  AND reading_date BETWEEN date_sub((SELECT max(reading_date) FROM andes_viento_dev.gold.v_park_daily), 6)\n                      AND (SELECT max(reading_date) FROM andes_viento_dev.gold.v_park_daily)\nORDER BY reading_date ASC",
   "genie_rows": [
    [
     "2026-09-24",
@@ -578,7 +574,7 @@
     "30.7"
    ]
   ],
-  "genie_text": "La generación diaria de Rawson Sur en la última semana con datos varió entre **30.7 MWh** y **269.4 MWh**. El valor más alto se registró el 25/09/2026 y el más bajo el 28/09/2026. Algunos días muestran fluctuaciones importantes en la producción.",
+  "genie_text": "La generación diaria de **Rawson Sur** en la última semana con datos varió entre **30.7 MWh** y **269.4 MWh**. El valor más alto se registró el 25/09/2026 (**269.4 MWh**) y el más bajo el 28/09/2026 (**30.7 MWh**). En general, la generación mostró fluctuaciones importantes durante la semana.",
   "match": true
  },
  {
@@ -591,14 +587,14 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT round(avg(avg_wind_ms), 2) AS viento_medio_julio_2025\nFROM `andes_viento_dev`.`gold`.`v_park_daily`\nWHERE park_name ILIKE '%Garayalde%' AND year_month = '2025-07' AND avg_wind_ms IS NOT NULL",
+  "genie_sql": "SELECT round(avg(dim_weather.wind_avg_ms), 2) AS viento_medio_julio_2025\nFROM andes_viento_dev.gold.dim_weather\nWHERE dim_weather.park_code = 'GAR' AND dim_weather.date_key BETWEEN 20250701 AND 20250731 AND dim_weather.wind_avg_ms IS NOT NULL",
   "genie_rows": [
    [
-    "8.76"
+    "8.87"
    ]
   ],
-  "genie_text": "El viento medio en Garayalde durante julio de 2025 fue de **8,76 m/s**. Este valor representa el promedio mensual registrado para ese parque en ese período.",
-  "match": true
+  "genie_text": "El viento medio en **Garayalde** durante julio de 2025 fue de **8,9 m/s**.",
+  "match": false
  },
  {
   "agent": "01_operacion_parques",
@@ -627,7 +623,7 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT `park_name`, COUNT(*) AS dias_con_hielo_invierno\nFROM `andes_viento_dev`.`gold`.`v_park_daily`\nWHERE `weather_condition` ILIKE '%Hielo%' AND `season` ILIKE '%invierno%' AND `technology` = 'Eólico' AND `park_name` IS NOT NULL AND `weather_condition` IS NOT NULL AND `season` IS NOT NULL\n  AND YEAR(`reading_date`) = 2025\nGROUP BY `park_name`\nORDER BY dias_con_hielo_invierno DESC",
+  "genie_sql": "SELECT p.`park_name`, COUNT(*) AS dias_con_hielo\nFROM `andes_viento_dev`.`gold`.`dim_weather` w\nJOIN `andes_viento_dev`.`gold`.`dim_park` p ON w.`park_code` = p.`park_code`\nJOIN `andes_viento_dev`.`gold`.`dim_date` d ON w.`date_key` = d.`date_key`\nWHERE w.`weather_condition` ILIKE '%Hielo%'\n  AND d.`season` = 'invierno'\n  AND d.`year` = 2025\n  AND p.`technology` = 'Eólico'\nGROUP BY p.`park_name`\nORDER BY dias_con_hielo DESC",
   "genie_rows": [
    [
     "Cerro Arenales",
@@ -650,7 +646,7 @@
     "9"
    ]
   ],
-  "genie_text": "Cada parque eólico tuvo entre 2 y 19 días con condición 'Hielo' en invierno 2025. El parque con más días fue **Cerro Arenales** (19), mientras que el que tuvo menos fue **Bahía Deseado** (2). Algunos valores destacados incluyen:\n- **Cerro Arenales**: 19 días\n- **Pampa del Castillo**: 18 días\n- **Cañadón León**: 11 días\n- **San Julián Meseta**: 10 días\n- **Garayalde**: 9 días\n\nLa mayoría de los parques tuvieron entre 8 y 19 días con esta condición, salvo Bahía Deseado que fue una excepción notable.",
+  "genie_text": "Cada parque eólico tuvo entre **2** y **19 días** con condición 'Hielo' en invierno 2025. Los parques con más días fueron **Cerro Arenales** (19) y **Pampa del Castillo** (18), mientras que **Bahía Deseado** tuvo la menor cantidad (2). En total, se reportaron 7 parques eólicos con días de 'Hielo' en ese período.",
   "match": true
  },
  {
@@ -663,13 +659,13 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT round(MEASURE(`Disponibilidad contractual`), 3) AS disponibilidad_contractual_promedio\nFROM andes_viento_dev.gold.mv_generacion\nWHERE `Parque` ILIKE '%Bahía Deseado%' AND `Año` = 2025\nGROUP BY ALL",
+  "genie_sql": "SELECT try_divide(MEASURE(`Disponibilidad contractual`),COUNT(*)) AS disponibilidad_contractual_promedio\nFROM andes_viento_dev.gold.mv_generacion\nWHERE `Parque` ILIKE '%Bahía Deseado%' AND `Año` = 2025\nGROUP BY ALL",
   "genie_rows": [
    [
-    "0.954"
+    "0.002613212234940889"
    ]
   ],
-  "genie_text": "La **disponibilidad contractual promedio** de Bahía Deseado en 2025 fue **95,4%**. Este valor refleja el cumplimiento del parque respecto a los compromisos contractuales durante ese año.",
+  "genie_text": "La **disponibilidad contractual promedio** de Bahía Deseado en 2025 es **0.0026** (valor unitario). Este dato corresponde exclusivamente al parque Bahía Deseado y al año 2025 según la información consultada.",
   "match": true
  },
  {
@@ -682,14 +678,14 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT COUNT(*) AS total_turbinas\nFROM `andes_viento_dev`.`gold`.`dim_turbine`\nWHERE `turbine_key` <> -1",
+  "genie_sql": "SELECT count(DISTINCT `turbine_id`) AS total_turbinas\nFROM `andes_viento_dev`.`gold`.`dim_turbine`\nWHERE `is_current` = true AND `turbine_key` <> -1",
   "genie_rows": [
    [
-    "92"
+    "37"
    ]
   ],
-  "genie_text": "El número total de turbinas es **92**. Este valor excluye la fila 'desconocida' con turbine_key = -1, según lo solicitado.",
-  "match": false
+  "genie_text": "El número total de turbinas actualmente vigentes es **37**. Este valor incluye únicamente las turbinas con versión vigente y clave válida.",
+  "match": true
  },
  {
   "agent": "02_mantenimiento_predictivo",
@@ -710,7 +706,7 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT dim_turbine.manufacturer, COUNT(DISTINCT dim_turbine.turbine_id) AS turbinas\nFROM andes_viento_dev.gold.dim_turbine\nWHERE dim_turbine.turbine_key != -1 AND dim_turbine.manufacturer IS NOT NULL\nGROUP BY dim_turbine.manufacturer\nORDER BY turbinas DESC",
+  "genie_sql": "SELECT `manufacturer`, COUNT(DISTINCT `turbine_id`) AS `turbinas`\nFROM `andes_viento_dev`.`gold`.`dim_turbine`\nWHERE `is_current` = true AND `turbine_key` <> -1 AND `manufacturer` IS NOT NULL\nGROUP BY `manufacturer`\nORDER BY `turbinas` DESC",
   "genie_rows": [
    [
     "Hanse Turbinen Werke",
@@ -725,7 +721,7 @@
     "8"
    ]
   ],
-  "genie_text": "Cada fabricante tiene la siguiente cantidad de turbinas:\n- **Hanse Turbinen Werke:** 16 turbinas\n- **Aurora Wind Systems:** 13 turbinas\n- **Pampa Eólica Industrial:** 8 turbinas\nEl fabricante con más turbinas es Hanse Turbinen Werke.",
+  "genie_text": "Cada fabricante tiene la siguiente cantidad de turbinas:\n- **Hanse Turbinen Werke**: 16 turbinas\n- **Aurora Wind Systems**: 13 turbinas\n- **Pampa Eólica Industrial**: 8 turbinas\nHanse Turbinen Werke es el fabricante con más turbinas en la muestra.",
   "match": true
  },
  {
@@ -738,13 +734,13 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT COUNT(*) AS total_fallas_mayores\nFROM andes_viento_dev.gold.fact_maintenance_order\nWHERE order_type = 'CORRECTIVA'\n  AND severity = 'MAYOR'\n  AND turbine_key IS NOT NULL\n  AND turbine_key != -1",
+  "genie_sql": "SELECT COUNT(*) AS total_fallas_mayores\nFROM `andes_viento_dev`.`gold`.`fact_maintenance_order`\nWHERE `order_type` = 'CORRECTIVA' AND `severity` = 'MAYOR'",
   "genie_rows": [
    [
     "26"
    ]
   ],
-  "genie_text": "El número total de **fallas mayores** registradas es **26**. Este valor incluye únicamente órdenes correctivas con severidad mayor y excluye turbinas desconocidas.",
+  "genie_text": "El total de **fallas mayores** registradas es **26**.",
   "match": true
  },
  {
@@ -757,13 +753,13 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT COUNT(*) AS fallas_mayores_multiplicadora_2025\nFROM `andes_viento_dev`.`gold`.`fact_maintenance_order`\nWHERE `order_type` = 'CORRECTIVA'\n  AND `severity` = 'MAYOR'\n  AND `component` ILIKE '%GEARBOX%'\n  AND `created_date` >= '2025-01-01' AND `created_date` <= '2025-12-31'\n  AND `turbine_key` != -1",
+  "genie_sql": "SELECT COUNT(*) AS fallas_mayores_multiplicadora_2025\nFROM andes_viento_dev.gold.fact_maintenance_order\nWHERE order_type = 'CORRECTIVA'\n  AND severity = 'MAYOR'\n  AND component = 'GEARBOX'\n  AND created_date >= '2025-01-01' AND created_date < '2026-01-01'",
   "genie_rows": [
    [
     "9"
    ]
   ],
-  "genie_text": "En 2025 hubo un total de **9 fallas mayores de multiplicadora** registradas. Todas estas fallas corresponden a órdenes correctivas con severidad mayor y componente multiplicadora (gearbox).",
+  "genie_text": "En 2025 hubo un total de **9 fallas mayores** de multiplicadora (componente GEARBOX) registradas como correctivas y de severidad mayor.",
   "match": true
  },
  {
@@ -776,9 +772,9 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT t.turbine_tag, try_divide(SUM(o.downtime_hours),24) AS dias_parada FROM andes_viento_dev.gold.fact_maintenance_order o JOIN andes_viento_dev.gold.dim_park p ON o.park_key = p.park_key JOIN andes_viento_dev.gold.dim_turbine t ON o.turbine_key = t.turbine_key WHERE p.park_name = 'Cañadón León' AND o.order_type = 'CORRECTIVA' AND o.severity = 'MAYOR' AND o.component = 'GEARBOX' AND t.is_current = true AND o.turbine_key != -1 AND o.work_start_ts <= '2025-07-31' AND o.work_end_ts >= '2025-07-01' GROUP BY t.turbine_tag ORDER BY dias_parada DESC",
+  "genie_sql": "SELECT t.`turbine_tag`, t.`turbine_id`, try_divide(SUM(o.`downtime_hours`),24) AS `dias_parada` FROM `andes_viento_dev`.`gold`.`fact_maintenance_order` o JOIN `andes_viento_dev`.`gold`.`dim_park` p ON o.`park_key` = p.`park_key` JOIN `andes_viento_dev`.`gold`.`dim_turbine` t ON o.`turbine_key` = t.`turbine_key` WHERE p.`park_name` ILIKE '%Cañadón León%' AND o.`order_type` = 'CORRECTIVA' AND o.`severity` = 'MAYOR' AND o.`component` = 'GEARBOX' AND o.`work_end_ts` BETWEEN '2025-07-01' AND '2025-07-31' AND o.`downtime_hours` IS NOT NULL GROUP BY t.`turbine_tag`, t.`turbine_id` ORDER BY `dias_parada` DESC",
   "genie_rows": [],
-  "genie_text": "No se registraron días de parada para ninguna turbina de Cañadón León por rotura de multiplicadora en julio 2025. Según los datos disponibles, no hubo órdenes correctivas mayores asociadas a ese componente en ese período.",
+  "genie_text": "No se registraron días de parada para ninguna turbina de Cañadón León por rotura de multiplicadora en julio de 2025. Esto indica que no hubo órdenes correctivas mayores asociadas a ese componente en ese período.",
   "match": false
  },
  {
@@ -791,13 +787,13 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT AVG(`downtime_hours`) AS `mttr_horas`\nFROM `andes_viento_dev`.`gold`.`fact_maintenance_order`\nWHERE `order_type` = 'CORRECTIVA'\n  AND YEAR(`created_date`) = 2025\n  AND `downtime_hours` IS NOT NULL",
+  "genie_sql": "SELECT MEASURE(`MTTR (h)`) AS mttr_horas\nFROM andes_viento_dev.gold.mv_mantenimiento\nWHERE `Tipo de orden` = 'CORRECTIVA' AND `Año` = 2025\nGROUP BY ALL",
   "genie_rows": [
    [
     "96.08138461538462"
    ]
   ],
-  "genie_text": "El MTTR de correctivas en 2025 es de **96,08 horas**.",
+  "genie_text": "El **MTTR de correctivas en 2025** es de **96.08 horas**. Este valor corresponde al promedio de tiempo de reparación para órdenes correctivas en ese año.",
   "match": true
  },
  {
@@ -810,13 +806,13 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT COUNT(`order_id`) AS `ordenes_preventivas_2024`\nFROM `andes_viento_dev`.`gold`.`fact_maintenance_order`\nWHERE `order_type` ILIKE '%PREVENTIVA%'\n  AND `created_date` >= '2024-01-01' AND `created_date` < '2025-01-01'\n  AND `order_type` IS NOT NULL\n  AND `created_date` IS NOT NULL",
+  "genie_sql": "SELECT COUNT(DISTINCT fact_maintenance_order.order_id) AS ordenes_preventivas_2024\nFROM andes_viento_dev.gold.fact_maintenance_order\nWHERE fact_maintenance_order.order_type = 'PREVENTIVA'\n  AND fact_maintenance_order.created_date >= '2024-01-01' AND fact_maintenance_order.created_date <= '2024-12-31'",
   "genie_rows": [
    [
     "73"
    ]
   ],
-  "genie_text": "En 2024 se realizaron un total de **73 órdenes preventivas**.",
+  "genie_text": "En el año 2024 se realizaron **73 órdenes preventivas**. Este valor representa el total de órdenes de mantenimiento preventivo registradas en ese período.",
   "match": true
  },
  {
@@ -829,13 +825,13 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT SUM(`total_cost_usd`) AS `costo_total_usd_2025`\nFROM `andes_viento_dev`.`gold`.`fact_maintenance_order`\nWHERE YEAR(`created_date`) = 2025 AND `total_cost_usd` IS NOT NULL",
+  "genie_sql": "SELECT SUM(`total_cost_usd`) AS `costo_total_usd_2025`\nFROM `andes_viento_dev`.`gold`.`fact_maintenance_order`\nWHERE YEAR(`created_date`) = 2025",
   "genie_rows": [
    [
     "2745858.849999999"
    ]
   ],
-  "genie_text": "El **costo total de mantenimiento en USD en 2025** fue de **2.745.858,85**. Este valor corresponde a la suma de todos los costos registrados en ese año.",
+  "genie_text": "El costo total de mantenimiento en USD durante el año 2025 fue de **2.745.858,85**. Este valor corresponde a la suma de todos los gastos registrados en ese periodo.",
   "match": true
  },
  {
@@ -853,7 +849,7 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT YEAR(`created_date`) AS `anio`, SUM(`labor_cost_ars`) AS `costo_mano_obra_ars`\nFROM `andes_viento_dev`.`gold`.`fact_maintenance_order`\nWHERE `created_date` IS NOT NULL AND `labor_cost_ars` IS NOT NULL AND YEAR(`created_date`) IN (2023, 2024)\nGROUP BY ALL\nORDER BY `anio` ASC",
+  "genie_sql": "SELECT year(fact_maintenance_order.created_date) AS anio, SUM(fact_maintenance_order.labor_cost_ars) AS costo_mano_obra_ars\nFROM andes_viento_dev.gold.fact_maintenance_order\nWHERE fact_maintenance_order.created_date IS NOT NULL AND fact_maintenance_order.labor_cost_ars IS NOT NULL AND year(fact_maintenance_order.created_date) IN (2023, 2024)\nGROUP BY ALL\nORDER BY anio ASC",
   "genie_rows": [
    [
     "2023",
@@ -864,7 +860,7 @@
     "5.82660774E8"
    ]
   ],
-  "genie_text": "En 2023, el costo de mano de obra fue de **111.414.916 ARS**, mientras que en 2024 ascendió a **582.660.774 ARS**. Esto muestra un aumento significativo en el gasto de mano de obra entre ambos años.",
+  "genie_text": "En 2023, el costo de mano de obra fue de **111.414.916 ARS**, mientras que en 2024 ascendió a **582.660.774 ARS**. Esto representa un aumento significativo en el costo de mano de obra de un año a otro.",
   "match": true
  },
  {
@@ -878,14 +874,15 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT `park_code`, SUM(`fault_h`) AS `total_fault_hours` FROM `andes_viento_dev`.`gold`.`fact_availability_daily` WHERE `reading_date` >= '2025-01-01' AND `reading_date` <= '2025-12-31' AND `park_code` IS NOT NULL AND `fault_h` IS NOT NULL GROUP BY `park_code` ORDER BY `total_fault_hours` DESC LIMIT 1",
+  "genie_sql": "SELECT p.park_name, f.park_code, SUM(f.fault_h) AS total_fault_hours\nFROM andes_viento_dev.gold.fact_availability_daily f\nJOIN andes_viento_dev.gold.dim_park p ON f.park_code = p.park_code\nWHERE f.reading_date >= '2025-01-01' AND f.reading_date < '2026-01-01'\n  AND f.park_code IS NOT NULL AND f.fault_h IS NOT NULL\nGROUP BY p.park_name, f.park_code\nORDER BY total_fault_hours DESC\nLIMIT 1",
   "genie_rows": [
    [
+    "Pico Truncado Alto",
     "PIC",
     "2277.34"
    ]
   ],
-  "genie_text": "El parque con más horas de falla en 2025 es **PIC**, con un total de **2277.34 horas** de falla registradas durante ese año.",
+  "genie_text": "El parque con más horas de falla en 2025 es **Pico Truncado Alto** (park_code = PIC), con un total de **2277.34 horas de falla**.\nEste valor representa el mayor acumulado de horas de falla entre los parques analizados para ese año.",
   "match": true
  },
  {
@@ -894,19 +891,18 @@
   "expected_sql": "SELECT availability_12m FROM andes_viento_dev.gold.mart_warranty_claims WHERE park_code = 'LEO' AND month_start = (SELECT max(month_start) FROM andes_viento_dev.gold.mart_warranty_claims)",
   "expected": [
    [
-    "0.99947"
+    "0.99942"
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT park_name, month_start, round(availability_12m * 100, 2) AS disponibilidad_pct\nFROM andes_viento_dev.gold.mart_warranty_claims\nWHERE park_name ILIKE '%Cañadón León%' AND month_start = (SELECT max(month_start) FROM andes_viento_dev.gold.mart_warranty_claims)",
+  "genie_sql": "SELECT `Parque`, round(MEASURE(`Disponibilidad contractual`) * 100, 2) AS disponibilidad_pct\nFROM andes_viento_dev.gold.mv_disponibilidad\nWHERE `Parque` ILIKE '%Cañadón León%' AND `Mes` = (SELECT max(`Mes`) FROM andes_viento_dev.gold.mv_disponibilidad WHERE `Parque` ILIKE '%Cañadón León%')\nGROUP BY ALL",
   "genie_rows": [
    [
     "Cañadón León",
-    "2026-09-01",
-    "99.95"
+    "100.0"
    ]
   ],
-  "genie_text": "La **disponibilidad contractual móvil 12 meses** de Cañadón León en el último mes (septiembre 2026) fue de **99.95%**. Este valor corresponde al parque \"Cañadón León\" y supera el umbral de garantía del 97%. ",
+  "genie_text": "La **disponibilidad contractual móvil 12 meses** de Cañadón León en el último mes es **100.0%**. Este valor corresponde al parque Cañadón León y representa el máximo posible de disponibilidad para el período consultado.",
   "match": true
  },
  {
@@ -980,13 +976,13 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT MEASURE(`Liquidated damages devengados (USD)`) AS total_ld_usd\nFROM andes_viento_dev.gold.mv_disponibilidad\nGROUP BY ALL",
+  "genie_sql": "SELECT MEASURE(`Liquidated damages devengados (USD)`) AS total_ld_usd\nFROM `andes_viento_dev`.`gold`.`mv_disponibilidad`\nGROUP BY ALL",
   "genie_rows": [
    [
     "823906.0"
    ]
   ],
-  "genie_text": "El total de **liquidated damages devengados** es de **823,906 USD** según los datos disponibles. Este valor representa la suma acumulada de penalizaciones por disponibilidad contractual.",
+  "genie_text": "El total de **liquidated damages devengados** es de **823,906 USD** según los datos disponibles. Esta cifra representa el monto acumulado en dólares estadounidenses para el periodo consultado.",
   "match": true
  },
  {
@@ -999,13 +995,13 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT COUNT(*) AS turbinas_en_riesgo_alto FROM andes_viento_dev.gold.fn_turbinas_en_riesgo(NULL) WHERE risk_level = 'ALTO'",
+  "genie_sql": "SELECT COUNT(*) AS turbinas_en_riesgo_alto\nFROM andes_viento_dev.gold.fn_turbinas_en_riesgo(NULL)\nWHERE risk_level = 'ALTO'",
   "genie_rows": [
    [
     "0"
    ]
   ],
-  "genie_text": "Hoy, el número de turbinas en riesgo alto es **0**. No hay turbinas identificadas con riesgo alto en la flota según los datos más recientes.",
+  "genie_text": "El número de turbinas en **riesgo alto** hoy es **0**. No hay turbinas con health_score menor a 60 en la flota actualmente.",
   "match": true
  },
  {
@@ -1018,13 +1014,13 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT COUNT(*) AS versiones\nFROM `andes_viento_dev`.`gold`.`dim_turbine`\nWHERE `turbine_id` ILIKE '%WTG00033%' AND `turbine_key` != -1",
+  "genie_sql": "SELECT COUNT(*) AS versiones\nFROM `andes_viento_dev`.`gold`.`dim_turbine`\nWHERE `turbine_id` ILIKE '%WTG00033%' AND `turbine_id` IS NOT NULL",
   "genie_rows": [
    [
     "3"
    ]
   ],
-  "genie_text": "La turbina con turbine_id **WTG00033** tiene **3 versiones** registradas en la tabla dim_turbine, excluyendo la fila 'desconocida'. Este es el total de versiones actualmente almacenadas para esa turbina.",
+  "genie_text": "La turbina con turbine_id **WTG00033** tiene **3 versiones** registradas en la tabla dim_turbine.",
   "match": true
  },
  {
@@ -1037,13 +1033,13 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT COUNT(*) AS multiplicadoras_reemplazadas\nFROM `andes_viento_dev`.`gold`.`dim_turbine`\nWHERE `change_reason` ILIKE '%CAMBIO_MULTIPLICADORA%'\n  AND `turbine_key` != -1",
+  "genie_sql": "SELECT COUNT(*) AS multiplicadoras_reemplazadas\nFROM `andes_viento_dev`.`gold`.`dim_turbine`\nWHERE `change_reason` ILIKE '%CAMBIO_MULTIPLICADORA%' AND `change_reason` IS NOT NULL",
   "genie_rows": [
    [
     "20"
    ]
   ],
-  "genie_text": "Se reemplazaron **20 multiplicadoras** según el motivo de cambio registrado como 'CAMBIO_MULTIPLICADORA'. Este total excluye turbinas desconocidas (turbine_key = -1).",
+  "genie_text": "Se reemplazaron **20 multiplicadoras** según el motivo de cambio registrado como 'CAMBIO_MULTIPLICADORA'. Este valor refleja el total de reemplazos identificados en la base de datos.",
   "match": true
  },
  {
@@ -1056,13 +1052,13 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT COUNT(DISTINCT `turbine_id`) AS `turbinas_renombradas`\nFROM `andes_viento_dev`.`gold`.`dim_turbine`\nWHERE `change_reason` ILIKE '%RENOMBRE%' AND `turbine_key` != -1",
+  "genie_sql": "SELECT COUNT(DISTINCT `turbine_id`) AS turbinas_renombradas\nFROM `andes_viento_dev`.`gold`.`dim_turbine`\nWHERE `change_reason` = 'RENOMBRE' AND `turbine_key` <> -1",
   "genie_rows": [
    [
     "5"
    ]
   ],
-  "genie_text": "El número de turbinas que fueron renombradas es **5**.",
+  "genie_text": "El número de turbinas que fueron renombradas es **5** según el campo turbinas_renombradas. Este valor refleja la cantidad total de turbinas identificadas con motivo de cambio 'RENOMBRE'.",
   "match": true
  },
  {
@@ -1075,13 +1071,13 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT AVG(`waiting_hours`) AS `horas_promedio_espera_repuestos`\nFROM `andes_viento_dev`.`gold`.`fact_maintenance_order`\nWHERE `order_type` = 'CORRECTIVA' AND `severity` = 'MAYOR' AND `waiting_hours` IS NOT NULL",
+  "genie_sql": "SELECT AVG(`waiting_hours`) AS `horas_promedio_espera_repuestos` FROM `andes_viento_dev`.`gold`.`fact_maintenance_order` WHERE `order_type` = 'CORRECTIVA' AND `severity` = 'MAYOR' AND `waiting_hours` IS NOT NULL",
   "genie_rows": [
    [
     "339.6873076923076"
    ]
   ],
-  "genie_text": "El promedio de horas de espera de repuestos en fallas mayores es de **339,7 horas**.",
+  "genie_text": "La **hora promedio de espera de repuestos en fallas mayores** es de **339.69 horas**. Este valor corresponde a órdenes correctivas con severidad mayor, según los datos disponibles.",
   "match": true
  },
  {
@@ -1094,13 +1090,13 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT MEASURE(`Horas de fuerza mayor`) AS horas_fuerza_mayor_2025\nFROM `andes_viento_dev`.`gold`.`mv_disponibilidad`\nWHERE `Año` = 2025\nGROUP BY ALL",
+  "genie_sql": "SELECT MEASURE(`Horas de fuerza mayor`) AS horas_fuerza_mayor_2025\nFROM andes_viento_dev.gold.mv_disponibilidad\nWHERE `Año` = 2025\nGROUP BY ALL",
   "genie_rows": [
    [
     "670.0"
    ]
   ],
-  "genie_text": "En el año 2025 hubo un total de **670.0 horas de demora** por ruta cortada por nieve, registradas como horas de fuerza mayor. Este valor representa el tiempo imputado a este tipo de evento en ese período.",
+  "genie_text": "En el año 2025 hubo un total de **670.0 horas de demora** por ruta cortada por nieve, registradas como horas de fuerza mayor. Este valor representa el tiempo imputado exclusivamente a este motivo durante ese año.",
   "match": true
  },
  {
@@ -1110,20 +1106,23 @@
   "expected": [
    [
     "CU-PAT-04",
-    "264"
+    "263"
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "WITH ordenes_por_cuadrilla AS (\n  SELECT c.crew_id, c.base_name, c.leader_name, COUNT(*) AS cantidad_ordenes,\n         RANK() OVER (ORDER BY COUNT(*) DESC) AS rank\n  FROM andes_viento_dev.gold.fact_maintenance_order o\n  JOIN andes_viento_dev.gold.dim_crew c ON o.crew_key = c.crew_key\n  WHERE o.crew_key IS NOT NULL\n  GROUP BY c.crew_id, c.base_name, c.leader_name\n)\nSELECT crew_id, base_name, leader_name, cantidad_ordenes\nFROM ordenes_por_cuadrilla\nWHERE rank = 1",
+  "genie_sql": "WITH ranked AS (\n  SELECT o.crew_key, COUNT(o.order_id) AS ordenes,\n         RANK() OVER (ORDER BY COUNT(o.order_id) DESC) AS r\n  FROM andes_viento_dev.gold.fact_maintenance_order o\n  WHERE o.crew_key IS NOT NULL\n  GROUP BY o.crew_key\n)\nSELECT r.crew_key, r.ordenes, c.crew_id, c.base, c.base_name, c.leader_name, c.specialty\nFROM ranked r\nJOIN andes_viento_dev.gold.dim_crew c ON r.crew_key = c.crew_key\nWHERE r.r = 1",
   "genie_rows": [
    [
+    "5474115452747887015",
+    "263",
     "CU-PAT-04",
+    "CRV",
     "Base Patagonia",
     "Iván Cayupán",
-    "264"
+    "Preventivo"
    ]
   ],
-  "genie_text": "La cuadrilla que atendió más órdenes es **CU-PAT-04** de la **Base Patagonia**, liderada por **Iván Cayupán**, con **264 órdenes** atendidas. Este es el valor más alto registrado en los datos consultados.",
+  "genie_text": "La cuadrilla que atendió más órdenes es **CU-PAT-04**, con un total de **263 órdenes**. Esta cuadrilla tiene como líder a **Iván Cayupán**, está basada en **Base Patagonia** (base CRV) y su especialidad es **Preventivo**.",
   "match": true
  },
  {
@@ -1132,17 +1131,17 @@
   "expected_sql": "SELECT count(*) FROM andes_viento_dev.gold.fact_maintenance_order WHERE is_open",
   "expected": [
    [
-    "6"
+    "7"
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT COUNT(*) AS ordenes_abiertas\nFROM `andes_viento_dev`.`gold`.`fact_maintenance_order`\nWHERE `is_open` = true",
+  "genie_sql": "SELECT count(*) AS ordenes_abiertas\nFROM `andes_viento_dev`.`gold`.`fact_maintenance_order`\nWHERE `is_open` = true",
   "genie_rows": [
    [
-    "6"
+    "7"
    ]
   ],
-  "genie_text": "Actualmente hay **6 órdenes abiertas** registradas en el sistema.",
+  "genie_text": "Hay **7 órdenes abiertas** según el estado actual de la base de datos. Este valor refleja el total de órdenes de mantenimiento que tienen el campo is_open igual a true.",
   "match": true
  },
  {
@@ -1155,7 +1154,7 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT MEASURE(`Disponibilidad contractual`) AS disponibilidad_contractual\nFROM `andes_viento_dev`.`gold`.`mv_disponibilidad`\nWHERE `Año` = 2025\nGROUP BY ALL",
+  "genie_sql": "SELECT MEASURE(`Disponibilidad contractual`) AS disponibilidad_contractual\nFROM andes_viento_dev.gold.mv_disponibilidad\nWHERE `Año` = 2025\nGROUP BY ALL",
   "genie_rows": [
    [
     "0.9831728751975432"
@@ -1174,13 +1173,13 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT COUNT(*) AS contratos_vigentes\nFROM `andes_viento_dev`.`gold`.`dim_contract`\nWHERE `status` = 'VIGENTE' AND `is_current` = true AND `contract_key` <> -1;",
+  "genie_sql": "SELECT COUNT(DISTINCT `contract_id`) AS contratos_vigentes\nFROM `andes_viento_dev`.`gold`.`dim_contract`\nWHERE `is_current` = true AND `status` = 'VIGENTE' AND `contract_key` <> -1",
   "genie_rows": [
    [
     "7"
    ]
   ],
-  "genie_text": "Hay **7 contratos PPA vigentes** según el último registro disponible. Este número incluye solo los contratos actuales con estado \"VIGENTE\" y una clave válida.",
+  "genie_text": "Hay **7 contratos PPA vigentes** según el último registro disponible.",
   "match": true
  },
  {
@@ -1194,7 +1193,7 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "WITH ranked AS (\n  SELECT \n    `client_name`, \n    `contract_id`, \n    `price_usd_mwh`, \n    RANK() OVER (ORDER BY `price_usd_mwh` DESC) AS rk\n  FROM `andes_viento_dev`.`gold`.`dim_contract`\n  WHERE `is_current` = true AND `status` = 'VIGENTE' AND `price_usd_mwh` IS NOT NULL\n)\nSELECT `client_name`, `contract_id`, `price_usd_mwh`\nFROM ranked\nWHERE rk = 1",
+  "genie_sql": "WITH ranked AS (\n  SELECT \n    `client_name`, \n    `contract_id`, \n    `price_usd_mwh`, \n    RANK() OVER (ORDER BY `price_usd_mwh` DESC) AS rk\n  FROM `andes_viento_dev`.`gold`.`dim_contract`\n  WHERE `is_current` = true AND `status` = 'VIGENTE' AND `contract_key` <> -1 AND `price_usd_mwh` IS NOT NULL\n)\nSELECT `client_name`, `contract_id`, `price_usd_mwh`\nFROM ranked\nWHERE rk = 1",
   "genie_rows": [
    [
     "Data Center Austral S.R.L.",
@@ -1202,7 +1201,7 @@
     "75.35"
    ]
   ],
-  "genie_text": "El cliente con el precio PPA más alto es **Data Center Austral S.R.L.**, con un precio de **75 USD/MWh** (contrato PPA-2023-007). Solo hay un cliente en los resultados, por lo que este es el valor máximo registrado.",
+  "genie_text": "El cliente con el precio PPA más alto es **Data Center Austral S.R.L.**, con un valor de **75.35 USD/MWh** según el contrato ID **PPA-2023-007**. Solo hay un cliente en el resultado, por lo que este es el precio máximo registrado en la muestra.",
   "match": true
  },
  {
@@ -1216,19 +1215,17 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT `contract_id`, `client_name`, `status`, `start_date`, `end_date`, `version`, `effective_from` \nFROM `andes_viento_dev`.`gold`.`dim_contract` \nWHERE `status` ILIKE '%rescindido%' AND `is_current` = true AND `contract_key` <> -1 \nORDER BY `effective_from` DESC",
+  "genie_sql": "SELECT dim_contract.contract_id, dim_contract.client_name, dim_contract.status, dim_contract.start_date, dim_contract.end_date\nFROM andes_viento_dev.gold.dim_contract\nWHERE dim_contract.status ILIKE '%rescindido%'\n  AND dim_contract.is_current = true\n  AND dim_contract.contract_key <> -1\n  AND dim_contract.status IS NOT NULL",
   "genie_rows": [
    [
     "PPA-2022-006",
     "Frigorífico Pampeano S.A.",
     "RESCINDIDO",
     "2022-02-01",
-    "2026-04-30",
-    "6",
-    "2026-06-14T13:00:00.000Z"
+    "2026-04-30"
    ]
   ],
-  "genie_text": "El contrato rescindido es el **PPA-2022-006** de **Frigorífico Pampeano S.A.**, con estado **RESCINDIDO** y fecha de finalización el **30/04/2026**. La versión vigente es la **6** y la fecha de inicio fue el **01/02/2022**.",
+  "genie_text": "El contrato que se rescindió es el **PPA-2022-006** con el cliente **Frigorífico Pampeano S.A.**, cuyo estado es \"RESCINDIDO\" y tuvo vigencia desde el 01/02/2022 hasta el 30/04/2026.",
   "match": true
  },
  {
@@ -1242,7 +1239,7 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT dim_contract.contract_id, dim_contract.client_name, dim_contract.start_date, dim_contract.status\nFROM andes_viento_dev.gold.dim_contract\nWHERE dim_contract.start_date >= '2025-01-01' AND dim_contract.start_date <= '2025-12-31'\n  AND dim_contract.is_current = true\n  AND dim_contract.contract_key <> -1\n  AND dim_contract.status IS NOT NULL\nORDER BY dim_contract.start_date ASC",
+  "genie_sql": "SELECT `contract_id`, `client_name`, `start_date`, `status` FROM `andes_viento_dev`.`gold`.`dim_contract` WHERE `start_date` >= '2025-01-01' AND `start_date` <= '2025-12-31' AND `is_current` = true AND `start_date` IS NOT NULL ORDER BY `start_date` ASC",
   "genie_rows": [
    [
     "PPA-2025-008",
@@ -1251,7 +1248,7 @@
     "VIGENTE"
    ]
   ],
-  "genie_text": "El contrato que comenzó en 2025 es el **PPA-2025-008** con la empresa **Papelera Mesopotámica S.A.**, cuya fecha de inicio fue el **1 de marzo de 2025** y su estado es **VIGENTE**.",
+  "genie_text": "El contrato que empezó en 2025 es el **PPA-2025-008** con el cliente **Papelera Mesopotámica S.A.**, cuya fecha de inicio es el **1 de marzo de 2025** y el estado es **VIGENTE**.",
   "match": true
  },
  {
@@ -1264,13 +1261,13 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT try_divide(SUM(delivered_mwh),SUM(committed_mwh)) * 100 AS cumplimiento_total_pct\nFROM andes_viento_dev.gold.fact_ppa_settlement\nWHERE YEAR(month_start) = 2025\n  AND delivered_mwh IS NOT NULL\n  AND committed_mwh IS NOT NULL",
+  "genie_sql": "SELECT try_divide(SUM(fact_ppa_settlement.delivered_mwh),SUM(fact_ppa_settlement.committed_mwh)) * 100 AS cumplimiento_total_pct\nFROM andes_viento_dev.gold.fact_ppa_settlement\nWHERE YEAR(fact_ppa_settlement.month_start) = 2025\n  AND fact_ppa_settlement.delivered_mwh IS NOT NULL\n  AND fact_ppa_settlement.committed_mwh IS NOT NULL",
   "genie_rows": [
    [
     "98.43995672856154"
    ]
   ],
-  "genie_text": "El cumplimiento total de la cartera en 2025 fue de **98.44%**.",
+  "genie_text": "El cumplimiento total de la cartera en 2025 fue de **98.44%**. Este valor refleja la proporción de energía entregada respecto a la comprometida durante ese año.",
   "match": true
  },
  {
@@ -1284,14 +1281,14 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "WITH ranked AS (\n  SELECT \n    client_name, \n    ROUND(try_divide(SUM(delivered_mwh),SUM(committed_mwh)) * 100, 1) AS cumplimiento_pct,\n    RANK() OVER (ORDER BY try_divide(SUM(delivered_mwh),SUM(committed_mwh)) ASC) AS r\n  FROM andes_viento_dev.gold.fact_ppa_settlement\n  WHERE YEAR(month_start) = 2025 AND client_name IS NOT NULL AND delivered_mwh IS NOT NULL AND committed_mwh IS NOT NULL\n  GROUP BY client_name\n)\nSELECT client_name, cumplimiento_pct\nFROM ranked\nWHERE r = 1",
+  "genie_sql": "WITH ranked AS (\n  SELECT \n    client_name, \n    ROUND(try_divide(SUM(delivered_mwh),SUM(committed_mwh)) * 100, 1) AS cumplimiento_pct,\n    RANK() OVER (ORDER BY try_divide(SUM(delivered_mwh),SUM(committed_mwh)) ASC) AS rnk\n  FROM andes_viento_dev.gold.fact_ppa_settlement\n  WHERE YEAR(month_start) = 2025 AND delivered_mwh IS NOT NULL AND committed_mwh IS NOT NULL\n  GROUP BY client_name\n)\nSELECT client_name, cumplimiento_pct\nFROM ranked\nWHERE rnk = 1",
   "genie_rows": [
    [
     "Data Center Austral S.R.L.",
     "96.6"
    ]
   ],
-  "genie_text": "El cliente con el peor cumplimiento en 2025 fue **Data Center Austral S.R.L.**, con un porcentaje de cumplimiento de **96.6%**. Este valor representa el menor cumplimiento entre todos los clientes analizados para ese año.",
+  "genie_text": "El cliente con el peor cumplimiento en 2025 fue **Data Center Austral S.R.L.**, con un porcentaje de cumplimiento de **96.6%**.\nEste valor representa el menor cumplimiento entre todos los clientes analizados para ese año.",
   "match": true
  },
  {
@@ -1300,17 +1297,17 @@
   "expected_sql": "SELECT count(*) FROM andes_viento_dev.gold.fact_ppa_settlement WHERE contract_id = 'PPA-2023-007' AND shortfall_mwh > 0",
   "expected": [
    [
-    "5"
+    "6"
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT COUNT(DISTINCT `year_month`) AS `meses_con_faltante` FROM `andes_viento_dev`.`gold`.`fact_ppa_settlement` WHERE `client_name` ILIKE '%data center%' AND `shortfall_mwh` > 0",
+  "genie_sql": "SELECT COUNT(DISTINCT `year_month`) AS `meses_con_faltante`\nFROM `andes_viento_dev`.`gold`.`fact_ppa_settlement`\nWHERE `client_name` ILIKE '%data center%' AND `shortfall_mwh` > 0",
   "genie_rows": [
    [
-    "5"
+    "6"
    ]
   ],
-  "genie_text": "El contrato del **Data Center Austral** tuvo faltante en **5 meses**. Este resultado se basa en los meses donde el volumen entregado fue menor al comprometido.",
+  "genie_text": "El contrato del **Data Center Austral** tuvo faltante en **6 meses** según los registros consultados. Este resultado se basa en los meses donde el volumen entregado fue menor al comprometido.",
   "match": true
  },
  {
@@ -1323,13 +1320,13 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT SUM(best_option_cost_usd) AS total_cost_usd\nFROM andes_viento_dev.gold.fact_ppa_settlement\nWHERE month_start >= '2025-01-01' AND month_start <= '2025-12-31' AND shortfall_mwh > 0",
+  "genie_sql": "SELECT round(SUM(fact_ppa_settlement.best_option_cost_usd), 0) AS total_cost_usd\nFROM andes_viento_dev.gold.fact_ppa_settlement\nWHERE fact_ppa_settlement.year_month >= '2025-01' AND fact_ppa_settlement.year_month <= '2025-12' AND fact_ppa_settlement.shortfall_mwh > 0",
   "genie_rows": [
    [
-    "261010.41000000003"
+    "261010.0"
    ]
   ],
-  "genie_text": "Cubrir todos los faltantes de 2025 con la mejor opción hubiera costado **261.010 USD**. Este monto corresponde a la suma de best_option_cost_usd para los meses con faltante en ese año.",
+  "genie_text": "Cubrir todos los faltantes de 2025 con la mejor opción hubiera costado **USD 261.010**. Este monto corresponde a la suma de los costos óptimos para cada faltante registrado durante ese año.",
   "match": true
  },
  {
@@ -1342,13 +1339,13 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT COUNT(*) AS casos_spot\nFROM `andes_viento_dev`.`gold`.`fact_ppa_settlement`\nWHERE `best_option` = 'COMPRAR_SPOT' AND `best_option` IS NOT NULL",
+  "genie_sql": "SELECT COUNT(*) AS casos_comprar_spot\nFROM `andes_viento_dev`.`gold`.`fact_ppa_settlement`\nWHERE `best_option` ILIKE '%COMPRAR_SPOT%' AND `best_option` IS NOT NULL",
   "genie_rows": [
    [
     "0"
    ]
   ],
-  "genie_text": "En **0 casos** convenía comprar en el spot en vez de pagar la penalidad, según los datos disponibles.",
+  "genie_text": "No hubo ningún caso en el que convenía **comprar en el spot** en vez de pagar la penalidad, ya que el valor de casos_comprar_spot es **0**.",
   "match": true
  },
  {
@@ -1361,13 +1358,13 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT round(sum(`delivered_mwh`), 1) AS mwh_entregado_2025\nFROM `andes_viento_dev`.`gold`.`fact_ppa_settlement`\nWHERE `client_name` ILIKE '%litio%' AND year(`month_start`) = 2025 AND `delivered_mwh` IS NOT NULL",
+  "genie_sql": "SELECT round(sum(delivered_mwh), 1) AS mwh_entregado_2025\nFROM `andes_viento_dev`.`gold`.`fact_ppa_settlement`\nWHERE client_name ILIKE '%litio%' AND year(month_start) = 2025 AND delivered_mwh IS NOT NULL",
   "genie_rows": [
    [
     "67993.2"
    ]
   ],
-  "genie_text": "En 2025, entregamos **67.993,2 MWh** a Litio de la Puna. Este valor corresponde al total suministrado durante ese año según los registros disponibles.",
+  "genie_text": "En 2025, entregamos un total de **67.993,2 MWh** a Litio de la Puna. Este valor corresponde a la suma anual registrada en los datos disponibles.",
   "match": true
  },
  {
@@ -1380,14 +1377,14 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT dim_contract.contract_id, dim_contract.source_parks\nFROM andes_viento_dev.gold.dim_contract\nWHERE dim_contract.client_name ILIKE '%data center%'\n  AND dim_contract.is_current = true\n  AND dim_contract.status = 'VIGENTE'\n  AND dim_contract.contract_key <> -1\n  AND dim_contract.source_parks IS NOT NULL",
+  "genie_sql": "SELECT `contract_id`, `source_parks` FROM `andes_viento_dev`.`gold`.`dim_contract` WHERE `client_name` ILIKE '%data center%' AND `is_current` = true AND `source_parks` IS NOT NULL",
   "genie_rows": [
    [
     "PPA-2023-007",
     "[\"SJU\",\"LEO\"]"
    ]
   ],
-  "genie_text": "El contrato del data center (contract_id = \"PPA-2023-007\") tiene como parques de origen **SJU** y **LEO**.\n\nSolo se muestra un contrato vigente y actual para el data center, con ambos parques como fuente de energía.",
+  "genie_text": "El contrato del data center (contract_id = PPA-2023-007) tiene como parques de origen a **SJU** y **LEO**.",
   "match": true
  },
  {
@@ -1400,13 +1397,13 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT COUNT(`version`) AS n_versiones FROM `andes_viento_dev`.`gold`.`dim_contract` WHERE `contract_id` ILIKE '%PPA-2023-007%' AND `version` IS NOT NULL;",
+  "genie_sql": "SELECT COUNT(*) AS n_versiones\nFROM andes_viento_dev.gold.dim_contract\nWHERE contract_id = 'PPA-2023-007';",
   "genie_rows": [
    [
     "5"
    ]
   ],
-  "genie_text": "El contrato con ID **PPA-2023-007** tiene **5 versiones** registradas en el sistema. Esta cantidad refleja todas las versiones no nulas asociadas a ese contrato.",
+  "genie_text": "El contrato con ID **PPA-2023-007** tiene **5 versiones** registradas en el sistema.",
   "match": true
  },
  {
@@ -1419,24 +1416,30 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT contract_id, version, effective_from, committed_mwh_month,\n       committed_mwh_month - LAG(committed_mwh_month) OVER (PARTITION BY contract_id ORDER BY effective_from) AS aumento_mwh_mes\nFROM andes_viento_dev.gold.dim_contract\nWHERE client_name ILIKE '%data center%'\n  AND committed_mwh_month IS NOT NULL\n  AND contract_key <> -1\n  AND is_deleted = false\n  AND YEAR(effective_from) = 2024\nORDER BY effective_from",
+  "genie_sql": "WITH adendas AS (\n  SELECT contract_id, version, effective_from, committed_mwh_month\n  FROM `andes_viento_dev`.`gold`.`dim_contract`\n  WHERE client_name ILIKE '%data center%' AND committed_mwh_month IS NOT NULL\n  ORDER BY effective_from\n)\nSELECT \n  a.contract_id,\n  a.version AS version_2024,\n  a.effective_from AS fecha_2024,\n  a.committed_mwh_month AS mwh_2024,\n  b.version AS version_anterior,\n  b.effective_from AS fecha_anterior,\n  b.committed_mwh_month AS mwh_anterior,\n  a.committed_mwh_month - b.committed_mwh_month AS diferencia_mwh_mes\nFROM adendas a\nJOIN adendas b ON a.contract_id = b.contract_id AND a.version = b.version + 1\nWHERE YEAR(a.effective_from) = 2024",
   "genie_rows": [
    [
     "PPA-2023-007",
     "2",
     "2024-01-05T03:00:00.000Z",
     "11030.5",
-    null
+    "1",
+    "1900-01-01T00:00:00.000Z",
+    "11030.5",
+    "0.0"
    ],
    [
     "PPA-2023-007",
     "3",
     "2024-06-01T13:00:00.000Z",
     "13236.6",
+    "2",
+    "2024-01-05T03:00:00.000Z",
+    "11030.5",
     "2206.1000000000004"
    ]
   ],
-  "genie_text": "El volumen comprometido del data center subió en **2.206 MWh/mes** con la adenda de 2024. Este aumento se refleja entre la versión 2 y la versión 3 del contrato, pasando de 11.030,5 MWh/mes a 13.236,6 MWh/mes.",
+  "genie_text": "El volumen comprometido del data center subió en **2.206 MWh/mes** con la adenda de 2024, pasando de **11.030,5 MWh/mes** a **13.236,6 MWh/mes**. No hubo cambios en la primera adenda de 2024, pero sí un aumento en la segunda.",
   "match": true
  },
  {
@@ -1449,7 +1452,7 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT `contract_id`, `price_usd_mwh`, `committed_mwh_month`, `status` FROM `andes_viento_dev`.`gold`.`dim_contract` WHERE `is_current` = true AND `client_name` ILIKE '%aluminios%' AND `price_usd_mwh` IS NOT NULL;",
+  "genie_sql": "SELECT `contract_id`, `price_usd_mwh`, `committed_mwh_month`, `status` FROM `andes_viento_dev`.`gold`.`dim_contract` WHERE `client_name` ILIKE '%aluminios%' AND `is_current` = true AND `status` ILIKE '%VIGENTE%' AND `contract_key` <> -1 ORDER BY `contract_id`",
   "genie_rows": [
    [
     "PPA-2018-001",
@@ -1458,7 +1461,7 @@
     "VIGENTE"
    ]
   ],
-  "genie_text": "El **precio actual** del contrato de Aluminios Patagónicos es **61.55 USD/MWh** según el contrato con ID PPA-2018-001, que está en estado **VIGENTE**. El volumen comprometido mensual es de **5311.0 MWh**.",
+  "genie_text": "El **precio actual** del contrato de Aluminios Patagónicos (contract_id = PPA-2018-001) es **61.55 USD/MWh**. El contrato está en estado **VIGENTE** y el volumen comprometido mensual es de **5311.0 MWh**.",
   "match": true
  },
  {
@@ -1471,13 +1474,13 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT round(MEASURE(`Ingresos PPA (USD)`), 0) AS ingresos_usd_total_2025\nFROM andes_viento_dev.gold.mv_ppa\nWHERE `Año` = 2025\nGROUP BY ALL",
+  "genie_sql": "SELECT MEASURE(`Ingresos PPA (USD)`) AS ingresos_usd\nFROM andes_viento_dev.gold.mv_ppa\nWHERE `Año` = 2025\nGROUP BY ALL",
   "genie_rows": [
    [
-    "3.5434628E7"
+    "3.5434627649999976E7"
    ]
   ],
-  "genie_text": "Los **ingresos PPA totales en 2025** fueron de **USD 35.434.628**. Este valor corresponde a la suma de todos los ingresos registrados para ese año según la base de datos consultada.",
+  "genie_text": "El ingreso total por PPA en 2025 fue de **USD 35.434.628**. Este valor corresponde a la suma de todos los contratos PPA registrados para ese año.",
   "match": true
  },
  {
@@ -1486,24 +1489,24 @@
   "expected_sql": "SELECT recommendation FROM andes_viento_dev.gold.fn_proyeccion_ppa('PPA-2023-007')",
   "expected": [
    [
-    "COMPRAR_SPOT"
+    "EN_CAMINO"
    ]
   ],
   "genie_status": "COMPLETED",
   "genie_sql": "SELECT * FROM `andes_viento_dev`.`gold`.`fn_proyeccion_ppa`(p_contrato => 'Data Center Austral')",
   "genie_rows": [
    [
-    "2026-09-30",
+    "2026-10-01",
     "PPA-2023-007",
     "Data Center Austral S.R.L.",
     "13236.6",
-    "6655.31",
-    "6655.31",
-    "0.5028",
-    "6184.19",
-    "260941.73",
-    "340130.56",
-    "COMPRAR_SPOT"
+    "426.99",
+    "13236.6",
+    "1.0",
+    "0.0",
+    "0.0",
+    "0.0",
+    "EN_CAMINO"
    ]
   ],
   "genie_text": "",
@@ -1515,17 +1518,17 @@
   "expected_sql": "SELECT count(*) FROM andes_viento_dev.gold.fn_proyeccion_ppa(NULL) WHERE projected_shortfall_mwh > 0",
   "expected": [
    [
-    "5"
+    "0"
    ]
   ],
   "genie_status": "COMPLETED",
   "genie_sql": "SELECT COUNT(*) AS contratos_con_faltante\nFROM andes_viento_dev.gold.fn_proyeccion_ppa(NULL)\nWHERE projected_shortfall_mwh > 0",
   "genie_rows": [
    [
-    "5"
+    "0"
    ]
   ],
-  "genie_text": "Este mes, hay **5 contratos** que proyectan un faltante de energía. Todos estos contratos tienen un volumen de faltante mayor a cero según la proyección actual.",
+  "genie_text": "La cantidad de contratos que proyectan faltante este mes es **0**. Esto significa que no se espera ningún incumplimiento en la entrega comprometida para este período.",
   "match": true
  },
  {
@@ -1541,11 +1544,11 @@
   "genie_sql": "SELECT * FROM `andes_viento_dev`.`gold`.`fn_proyeccion_ppa`(p_contrato => 'papelera')",
   "genie_rows": [
    [
-    "2026-09-30",
+    "2026-10-01",
     "PPA-2025-008",
     "Papelera Mesopotámica S.A.",
     "2520.7",
-    "2520.7",
+    "81.31",
     "2520.7",
     "1.0",
     "0.0",
@@ -1563,20 +1566,19 @@
   "expected_sql": "SELECT year_month, round(sum(best_option_cost_usd), 0) AS usd FROM andes_viento_dev.gold.fact_ppa_settlement GROUP BY year_month ORDER BY usd DESC LIMIT 1",
   "expected": [
    [
-    "2025-06",
-    "222848.0"
+    "2026-10",
+    "1434341.0"
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "WITH ranked AS (SELECT `Mes`, MEASURE(`Faltante (MWh)`) AS faltante_mwh, MEASURE(`Costo de la mejor opción (USD)`) AS costo_mejor_opcion_usd, RANK() OVER (ORDER BY MEASURE(`Costo de la mejor opción (USD)`) DESC) AS rnk FROM andes_viento_dev.gold.mv_ppa GROUP BY ALL HAVING faltante_mwh > 0 AND `Mes` IS NOT NULL) SELECT `Mes`, faltante_mwh, costo_mejor_opcion_usd FROM ranked WHERE rnk = 1",
+  "genie_sql": "WITH monthly_costs AS (\n  SELECT year_month, SUM(best_option_cost_usd) AS total_best_option_cost_usd\n  FROM andes_viento_dev.gold.fact_ppa_settlement\n  WHERE best_option_cost_usd IS NOT NULL\n  GROUP BY year_month\n)\nSELECT year_month, total_best_option_cost_usd\nFROM monthly_costs\nORDER BY total_best_option_cost_usd DESC\nLIMIT 1",
   "genie_rows": [
    [
-    "2025-06",
-    "4496.349999999999",
-    "222848.44"
+    "2026-10",
+    "1434341.3399999999"
    ]
   ],
-  "genie_text": "El mes con **mayor costo en USD de faltantes (mejor opción)** fue **junio 2025**, con un costo de **222.848 USD** y un faltante de **4.496,35 MWh**. Este es el valor más alto registrado en toda la historia según los datos consultados.",
+  "genie_text": "El mes con **mayor costo en USD de faltantes (mejor opción)** en toda la historia fue **2026-10**, con un total de **1.434.341 USD**.",
   "match": true
  },
  {
@@ -1589,13 +1591,13 @@
    ]
   ],
   "genie_status": "COMPLETED",
-  "genie_sql": "SELECT SUM(`committed_mwh_month`) AS `volumen_comprometido_total_mensual`\nFROM `andes_viento_dev`.`gold`.`dim_contract`\nWHERE `is_current` = true AND `status` = 'VIGENTE' AND `contract_key` <> -1 AND `committed_mwh_month` IS NOT NULL",
+  "genie_sql": "SELECT ROUND(SUM(`committed_mwh_month`), 0) AS volumen_comprometido_total_mensual\nFROM `andes_viento_dev`.`gold`.`dim_contract`\nWHERE `is_current` = true AND `status` = 'VIGENTE' AND `contract_key` <> -1 AND `committed_mwh_month` IS NOT NULL",
   "genie_rows": [
    [
-    "39554.399999999994"
+    "39554.0"
    ]
   ],
-  "genie_text": "El **volumen comprometido total mensual** de la cartera vigente es de **39.554 MWh**. Este valor corresponde a la suma de todos los contratos actuales con estado 'VIGENTE' y volumen comprometido informado.",
+  "genie_text": "El **volumen comprometido total mensual** de la cartera vigente es de **39.554 MWh**. Este valor corresponde a la suma de todos los contratos actuales con estado 'VIGENTE'.",
   "match": true
  },
  {
@@ -1614,7 +1616,7 @@
     "1"
    ]
   ],
-  "genie_text": "Hay **1 cliente** del sector Minería con contratos vigentes según la información actual. Este resultado se basa en contratos marcados como actuales en el sistema.",
+  "genie_text": "Hay **1 cliente** del sector Minería con contratos vigentes según la información actual. Este resultado se basa en contratos marcados como actuales en la base de datos.",
   "match": true
  },
  {
@@ -1626,50 +1628,9 @@
     "11215.3"
    ]
   ],
-  "genie_status": "COMPLETED",
-  "genie_sql": "SELECT * FROM `andes_viento_dev`.`gold`.`fn_perdida_curtailment`(p_parque => 'NULL', p_desde => '2024-01-01', p_hasta => '2024-12-31')",
-  "genie_rows": [
-   [
-    "San Julián Meseta",
-    "2429.1",
-    "0.0253",
-    "23045.0",
-    "175916.0",
-    "382"
-   ],
-   [
-    "Cañadón León",
-    "3381.3",
-    "0.0339",
-    "31948.0",
-    "244877.0",
-    "463"
-   ],
-   [
-    "Cerro Arenales",
-    "721.3",
-    "0.0081",
-    "6721.0",
-    "45652.0",
-    "210"
-   ],
-   [
-    "Rawson Sur",
-    "278.2",
-    "0.0047",
-    "3314.0",
-    "16456.0",
-    "183"
-   ],
-   [
-    "Bahía Deseado",
-    "1060.4",
-    "0.0129",
-    "9924.0",
-    "71165.0",
-    "325"
-   ]
-  ],
+  "genie_status": "FAILED",
+  "genie_sql": null,
+  "genie_rows": [],
   "genie_text": "",
   "match": false
  },
@@ -1691,79 +1652,25 @@
     "10856.0"
    ]
   ],
-  "genie_status": "COMPLETED",
-  "genie_sql": "SELECT `Año`, MEASURE(`Energía perdida por curtailment (MWh)`) AS curtailed_mwh\nFROM andes_viento_dev.gold.mv_curtailment\nWHERE `Año` IN (2023, 2024, 2025)\nGROUP BY ALL\nORDER BY `Año` ASC",
-  "genie_rows": [
-   [
-    "2023",
-    "4340.588799999999"
-   ],
-   [
-    "2024",
-    "11215.2989"
-   ],
-   [
-    "2025",
-    "10855.977199999981"
-   ]
-  ],
-  "genie_text": "El curtailment medido en energía perdida (MWh) aumentó de **4340,6 MWh** en 2023 a **11215,3 MWh** en 2024, pero luego disminuyó ligeramente a **10856,0 MWh** en 2025. Por lo tanto, el curtailment creció de 2023 a 2024, pero bajó en 2025 respecto al año anterior.",
-  "match": true
+  "genie_status": "FAILED",
+  "genie_sql": null,
+  "genie_rows": [],
+  "genie_text": "",
+  "match": false
  },
  {
   "agent": "04_finanzas_mercado",
   "question": "¿Qué parque perdió más energía por curtailment en 2025?",
-  "expected_sql": "SELECT park_code, round(sum(lost_curtailment_mwh), 1) AS mwh FROM andes_viento_dev.gold.fact_curtailment_hourly WHERE year(reading_date) = 2025 GROUP BY park_code ORDER BY mwh DESC LIMIT 1",
+  "expected_sql": "SELECT p.park_name, round(sum(f.lost_curtailment_mwh), 1) AS mwh FROM andes_viento_dev.gold.fact_curtailment_hourly f JOIN andes_viento_dev.gold.dim_park p ON p.park_key = f.park_key WHERE year(f.reading_date) = 2025 GROUP BY p.park_name ORDER BY mwh DESC LIMIT 1",
   "expected": [
    [
-    "LEO",
+    "Cañadón León",
     "3719.5"
    ]
   ],
-  "genie_status": "COMPLETED",
-  "genie_sql": "SELECT * FROM `andes_viento_dev`.`gold`.`fn_perdida_curtailment`(p_parque => 'NULL', p_desde => '2025-01-01', p_hasta => '2025-12-31')",
-  "genie_rows": [
-   [
-    "San Julián Meseta",
-    "2834.6",
-    "0.0297",
-    "26298.0",
-    "209395.0",
-    "468"
-   ],
-   [
-    "Cañadón León",
-    "3719.5",
-    "0.0377",
-    "79091.0",
-    "274757.0",
-    "693"
-   ],
-   [
-    "Cerro Arenales",
-    "656.1",
-    "0.0075",
-    "5886.0",
-    "42360.0",
-    "232"
-   ],
-   [
-    "Rawson Sur",
-    "129.1",
-    "0.0023",
-    "1913.0",
-    "7791.0",
-    "133"
-   ],
-   [
-    "Bahía Deseado",
-    "1031.7",
-    "0.0128",
-    "9861.0",
-    "70621.0",
-    "291"
-   ]
-  ],
+  "genie_status": "FAILED",
+  "genie_sql": null,
+  "genie_rows": [],
   "genie_text": "",
   "match": false
  },
@@ -1776,20 +1683,11 @@
     "0.0297"
    ]
   ],
-  "genie_status": "COMPLETED",
-  "genie_sql": "SELECT * FROM `andes_viento_dev`.`gold`.`fn_perdida_curtailment`(p_parque => 'San Julián Meseta', p_desde => '2025-01-01', p_hasta => '2025-12-31')",
-  "genie_rows": [
-   [
-    "San Julián Meseta",
-    "2834.6",
-    "0.0297",
-    "26298.0",
-    "209395.0",
-    "468"
-   ]
-  ],
+  "genie_status": "FAILED",
+  "genie_sql": null,
+  "genie_rows": [],
   "genie_text": "",
-  "match": true
+  "match": false
  },
  {
   "agent": "04_finanzas_mercado",
@@ -1800,50 +1698,9 @@
     "146078.0"
    ]
   ],
-  "genie_status": "COMPLETED",
-  "genie_sql": "SELECT * FROM `andes_viento_dev`.`gold`.`fn_perdida_curtailment`(p_parque => 'NULL', p_desde => '2025-01-01', p_hasta => '2025-12-31')",
-  "genie_rows": [
-   [
-    "San Julián Meseta",
-    "2834.6",
-    "0.0297",
-    "26298.0",
-    "209395.0",
-    "468"
-   ],
-   [
-    "Cañadón León",
-    "3719.5",
-    "0.0377",
-    "79091.0",
-    "274757.0",
-    "693"
-   ],
-   [
-    "Cerro Arenales",
-    "656.1",
-    "0.0075",
-    "5886.0",
-    "42360.0",
-    "232"
-   ],
-   [
-    "Rawson Sur",
-    "129.1",
-    "0.0023",
-    "1913.0",
-    "7791.0",
-    "133"
-   ],
-   [
-    "Bahía Deseado",
-    "1031.7",
-    "0.0128",
-    "9861.0",
-    "70621.0",
-    "291"
-   ]
-  ],
+  "genie_status": "FAILED",
+  "genie_sql": null,
+  "genie_rows": [],
   "genie_text": "",
   "match": false
  },
@@ -1857,72 +1714,11 @@
     "BESS-30x2"
    ]
   ],
-  "genie_status": "COMPLETED",
-  "genie_sql": "SELECT * FROM `andes_viento_dev`.`gold`.`fn_ranking_baterias`(p_meses => 12)",
-  "genie_rows": [
-   [
-    "Cañadón León",
-    "BESS-30x2",
-    "5.4",
-    "10.8",
-    "3328.1",
-    "517.4",
-    "38759.0",
-    "3024000.0",
-    "78.0",
-    "1"
-   ],
-   [
-    "San Julián Meseta",
-    "BESS-30x2",
-    "5.4",
-    "10.8",
-    "2833.7",
-    "511.8",
-    "38321.0",
-    "3024000.0",
-    "78.9",
-    "2"
-   ],
-   [
-    "Cañadón León",
-    "BESS-10x4",
-    "1.8",
-    "7.2",
-    "3328.1",
-    "338.5",
-    "25359.0",
-    "2016000.0",
-    "79.5",
-    "3"
-   ],
-   [
-    "San Julián Meseta",
-    "BESS-10x4",
-    "1.8",
-    "7.2",
-    "2833.7",
-    "336.9",
-    "25216.0",
-    "2016000.0",
-    "79.9",
-    "4"
-   ],
-   [
-    "Cañadón León",
-    "BESS-20x4",
-    "3.6",
-    "14.4",
-    "3328.1",
-    "647.1",
-    "48473.0",
-    "4032000.0",
-    "83.2",
-    "5"
-   ]
-  ],
+  "genie_status": "FAILED",
+  "genie_sql": null,
+  "genie_rows": [],
   "genie_text": "",
-  "match": true
+  "match": false
  },
  {
   "agent": "04_finanzas_mercado",
@@ -1930,20 +1726,14 @@
   "expected_sql": "SELECT simple_payback_years FROM andes_viento_dev.gold.fn_ranking_baterias(12) WHERE park_name = 'Cañadón León' AND option_code = 'BESS-20x4'",
   "expected": [
    [
-    "83.2"
+    "92.1"
    ]
   ],
-  "genie_status": "COMPLETED",
-  "genie_sql": "SELECT `park_name`, `option_code`, `simple_payback_years` \nFROM andes_viento_dev.gold.fn_ranking_baterias(12)\nWHERE `park_name` ILIKE '%cañadón león%' AND `option_code` ILIKE '%bess-20x4%'\nORDER BY `simple_payback_years` ASC",
-  "genie_rows": [
-   [
-    "Cañadón León",
-    "BESS-20x4",
-    "83.2"
-   ]
-  ],
-  "genie_text": "La batería **BESS-20x4** en el parque **Cañadón León** tiene un repago simple de **83,2 años**. Este valor corresponde al cálculo de repago anual recuperado según la función fn_ranking_baterias para 12 meses.",
-  "match": true
+  "genie_status": "FAILED",
+  "genie_sql": null,
+  "genie_rows": [],
+  "genie_text": "",
+  "match": false
  },
  {
   "agent": "04_finanzas_mercado",
@@ -1955,16 +1745,11 @@
     "2944.7"
    ]
   ],
-  "genie_status": "COMPLETED",
-  "genie_sql": "WITH ranked AS (\n  SELECT \n    `Hora local`, \n    MEASURE(`Energía perdida por curtailment (MWh)`) AS perdida_mwh,\n    RANK() OVER (ORDER BY MEASURE(`Energía perdida por curtailment (MWh)`) DESC) AS rk\n  FROM andes_viento_dev.gold.mv_curtailment\n  WHERE `Hora local` IS NOT NULL\n  GROUP BY ALL\n)\nSELECT `Hora local`, perdida_mwh\nFROM ranked\nWHERE rk = 1",
-  "genie_rows": [
-   [
-    "6",
-    "2944.6732"
-   ]
-  ],
-  "genie_text": "¿Prefieres que te muestre la hora local con mayor energía perdida promedio por curtailment en lugar del total acumulado?La mayor pérdida de energía por curtailment ocurre a las **6 horas locales**, con un valor de **2944,6732 MWh**. Este es el horario con el mayor impacto registrado en la muestra analizada.",
-  "match": true
+  "genie_status": "FAILED",
+  "genie_sql": null,
+  "genie_rows": [],
+  "genie_text": "",
+  "match": false
  },
  {
   "agent": "04_finanzas_mercado",
@@ -1975,16 +1760,11 @@
     "800.0"
    ]
   ],
-  "genie_status": "COMPLETED",
-  "genie_sql": "SELECT `date`, `fx_ars_usd` FROM `andes_viento_dev`.`gold`.`dim_date` WHERE `date` = '2023-12-13' AND `fx_ars_usd` IS NOT NULL;",
-  "genie_rows": [
-   [
-    "2023-12-13",
-    "800.0"
-   ]
-  ],
-  "genie_text": "El **dólar oficial** el 13 de diciembre de 2023 fue **800,0 ARS/USD** según el valor registrado en la tabla de fechas.",
-  "match": true
+  "genie_status": "FAILED",
+  "genie_sql": null,
+  "genie_rows": [],
+  "genie_text": "",
+  "match": false
  },
  {
   "agent": "04_finanzas_mercado",
@@ -1995,17 +1775,11 @@
     "47.53"
    ]
   ],
-  "genie_status": "COMPLETED",
-  "genie_sql": "SELECT cammesa_node, year(reading_date) AS anio, avg(spot_usd_mwh) AS spot_usd\nFROM andes_viento_dev.gold.fact_curtailment_hourly\nWHERE cammesa_node ILIKE '%patagonia%' AND reading_date >= '2025-01-01' AND reading_date < '2026-01-01' AND spot_usd_mwh IS NOT NULL\nGROUP BY ALL\nORDER BY anio, cammesa_node",
-  "genie_rows": [
-   [
-    "PATAGONIA",
-    "2025",
-    "47.526341886446524"
-   ]
-  ],
-  "genie_text": "El **precio spot medio** del nodo Patagonia en el año 2025 fue de **47,53 USD/MWh**. Este valor corresponde exclusivamente al nodo \"PATAGONIA\" y al año solicitado.",
-  "match": true
+  "genie_status": "FAILED",
+  "genie_sql": null,
+  "genie_rows": [],
+  "genie_text": "",
+  "match": false
  },
  {
   "agent": "04_finanzas_mercado",
@@ -2013,28 +1787,19 @@
   "expected_sql": "SELECT has_instruction, round(avg(spot_usd_mwh), 2) FROM andes_viento_dev.gold.fact_curtailment_hourly WHERE cammesa_node = 'PATAGONIA' GROUP BY has_instruction",
   "expected": [
    [
-    "false",
-    "49.3"
-   ],
-   [
     "true",
     "11.36"
-   ]
-  ],
-  "genie_status": "COMPLETED",
-  "genie_sql": "SELECT \n  CASE WHEN `has_instruction` THEN 'Con curtailment' ELSE 'Sin curtailment' END AS curtailment_status,\n  ROUND(AVG(`spot_usd_mwh`), 2) AS avg_spot_usd_mwh\nFROM `andes_viento_dev`.`gold`.`fact_curtailment_hourly`\nWHERE `cammesa_node` ILIKE '%PATAGONIA%'\n  AND `spot_usd_mwh` IS NOT NULL\n  AND `has_instruction` IS NOT NULL\nGROUP BY curtailment_status\nORDER BY curtailment_status",
-  "genie_rows": [
-   [
-    "Con curtailment",
-    "11.36"
    ],
    [
-    "Sin curtailment",
+    "false",
     "49.3"
    ]
   ],
-  "genie_text": "El precio spot medio en horas con curtailment en Patagonia es de **USD 11,36/MWh**, mientras que en horas sin curtailment es de **USD 49,3/MWh**. Esto muestra que el precio spot es significativamente menor durante las horas con curtailment.",
-  "match": true
+  "genie_status": "FAILED",
+  "genie_sql": null,
+  "genie_rows": [],
+  "genie_text": "",
+  "match": false
  },
  {
   "agent": "04_finanzas_mercado",
@@ -2045,15 +1810,11 @@
     "1826.6"
    ]
   ],
-  "genie_status": "COMPLETED",
-  "genie_sql": "SELECT SUM(mart_generation_vs_budget.variance_mwh) AS desvio_total_mwh\nFROM andes_viento_dev.gold.mart_generation_vs_budget\nWHERE mart_generation_vs_budget.year = 2025 AND mart_generation_vs_budget.variance_mwh IS NOT NULL",
-  "genie_rows": [
-   [
-    "1826.5900000000047"
-   ]
-  ],
-  "genie_text": "El desvío total de generación respecto al presupuesto para toda la empresa en 2025 es de **1.826,59 MWh**.",
-  "match": true
+  "genie_status": "FAILED",
+  "genie_sql": null,
+  "genie_rows": [],
+  "genie_text": "",
+  "match": false
  },
  {
   "agent": "04_finanzas_mercado",
@@ -2064,15 +1825,11 @@
     "0.0015"
    ]
   ],
-  "genie_status": "COMPLETED",
-  "genie_sql": "SELECT try_divide(100 * (SUM(`actual_mwh`) - SUM(`budget_p50_mwh`)),SUM(`budget_p50_mwh`)) AS desvio_pct_empresa_2024\nFROM `andes_viento_dev`.`gold`.`mart_generation_vs_budget`\nWHERE `year` = 2024 AND `actual_mwh` IS NOT NULL AND `budget_p50_mwh` IS NOT NULL",
-  "genie_rows": [
-   [
-    "0.15074852832652647"
-   ]
-  ],
-  "genie_text": "El desvío porcentual de generación respecto al presupuesto para toda la empresa en 2024 fue de **15,07%**. Este valor indica que la generación real superó el presupuesto estimado para ese año.",
-  "match": true
+  "genie_status": "FAILED",
+  "genie_sql": null,
+  "genie_rows": [],
+  "genie_text": "",
+  "match": false
  },
  {
   "agent": "04_finanzas_mercado",
@@ -2083,16 +1840,11 @@
     "0.04"
    ]
   ],
-  "genie_status": "COMPLETED",
-  "genie_sql": "SELECT `region`, AVG(`assumed_curtailment`) AS curtailment_pct\nFROM `andes_viento_dev`.`gold`.`mart_generation_vs_budget`\nWHERE `year` = 2025 AND `region` ILIKE '%patagonia%' AND `assumed_curtailment` IS NOT NULL\nGROUP BY `region`",
-  "genie_rows": [
-   [
-    "PATAGONIA",
-    "0.04000000000000003"
-   ]
-  ],
-  "genie_text": "El presupuesto 2025 para la región **Patagonia** asumía un porcentaje de curtailment de **4%** (curtailment_pct = 0,04000000000000003). Este valor corresponde al promedio de los parques de la región según los datos disponibles.",
-  "match": true
+  "genie_status": "FAILED",
+  "genie_sql": null,
+  "genie_rows": [],
+  "genie_text": "",
+  "match": false
  },
  {
   "agent": "04_finanzas_mercado",
@@ -2103,15 +1855,11 @@
     "618276.0"
    ]
   ],
-  "genie_status": "COMPLETED",
-  "genie_sql": "SELECT SUM(`labor_cost_usd`) AS `total_labor_cost_usd_2024`\nFROM `andes_viento_dev`.`gold`.`fact_maintenance_order`\nWHERE YEAR(`created_date`) = 2024 AND `labor_cost_usd` IS NOT NULL",
-  "genie_rows": [
-   [
-    "618275.6399999999"
-   ]
-  ],
-  "genie_text": "El costo total de la mano de obra de mantenimiento en dólares durante 2024 fue de **USD 618.275,64**. Este valor corresponde a la suma de todos los gastos registrados en el año según la base de datos consultada.",
-  "match": true
+  "genie_status": "FAILED",
+  "genie_sql": null,
+  "genie_rows": [],
+  "genie_text": "",
+  "match": false
  },
  {
   "agent": "04_finanzas_mercado",
@@ -2122,15 +1870,11 @@
     "715537.0"
    ]
   ],
-  "genie_status": "COMPLETED",
-  "genie_sql": "SELECT SUM(fact_maintenance_order.total_cost_usd) AS total_maintenance_cost_usd_2023\nFROM andes_viento_dev.gold.fact_maintenance_order\nWHERE fact_maintenance_order.created_date >= '2023-01-01' AND fact_maintenance_order.created_date <= '2023-12-31' AND fact_maintenance_order.total_cost_usd IS NOT NULL",
-  "genie_rows": [
-   [
-    "715537.1100000002"
-   ]
-  ],
-  "genie_text": "El **costo de mantenimiento total en USD en 2023** fue de **715.537,11 USD**. Este valor incluye todas las órdenes de mantenimiento registradas durante el año 2023.",
-  "match": true
+  "genie_status": "FAILED",
+  "genie_sql": null,
+  "genie_rows": [],
+  "genie_text": "",
+  "match": false
  },
  {
   "agent": "04_finanzas_mercado",
@@ -2141,17 +1885,11 @@
     "73.87"
    ]
   ],
-  "genie_status": "COMPLETED",
-  "genie_sql": "SELECT vpm.park_code, vpm.month_start, vpm.ppa_price_usd_mwh FROM andes_viento_dev.gold.v_park_price_month vpm JOIN andes_viento_dev.gold.dim_park dp ON vpm.park_code = dp.park_code WHERE dp.park_name = 'Cañadón León' AND vpm.month_start = '2025-07-01' ORDER BY vpm.month_start ASC",
-  "genie_rows": [
-   [
-    "LEO",
-    "2025-07-01",
-    "73.87"
-   ]
-  ],
-  "genie_text": "El **precio de realización PPA** para **Cañadón León** en **julio 2025** es de **73,87 USD/MWh**.",
-  "match": true
+  "genie_status": "FAILED",
+  "genie_sql": null,
+  "genie_rows": [],
+  "genie_text": "",
+  "match": false
  },
  {
   "agent": "04_finanzas_mercado",
@@ -2162,42 +1900,11 @@
     "-279.9"
    ]
   ],
-  "genie_status": "COMPLETED",
-  "genie_sql": "SELECT * FROM `andes_viento_dev`.`gold`.`fn_explicar_desvio`(p_parque => 'Cañadón León', p_mes => '2025-07')",
-  "genie_rows": [
-   [
-    "1",
-    "Presupuesto P50",
-    "6988.5",
-    "1.0"
-   ],
-   [
-    "2",
-    "Efecto del recurso (viento/sol)",
-    "-279.9",
-    "-0.04"
-   ],
-   [
-    "3",
-    "Curtailment por encima de lo presupuestado",
-    "-527.8",
-    "-0.0755"
-   ],
-   [
-    "4",
-    "Fallas y mantenimiento por encima de lo presupuestado",
-    "-55.6",
-    "-0.008"
-   ],
-   [
-    "5",
-    "Hielo en palas",
-    "-350.0",
-    "-0.0501"
-   ]
-  ],
+  "genie_status": "FAILED",
+  "genie_sql": null,
+  "genie_rows": [],
   "genie_text": "",
-  "match": true
+  "match": false
  },
  {
   "agent": "04_finanzas_mercado",
@@ -2208,17 +1915,11 @@
     "344"
    ]
   ],
-  "genie_status": "COMPLETED",
-  "genie_sql": "SELECT `Parque`, `Año`, MEASURE(`Horas con orden de CAMMESA`) AS horas_con_orden\nFROM andes_viento_dev.gold.mv_curtailment\nWHERE `Parque` ILIKE '%Pico Truncado Alto%' AND `Año` = 2025\nGROUP BY ALL",
-  "genie_rows": [
-   [
-    "Pico Truncado Alto",
-    "2025",
-    "344"
-   ]
-  ],
-  "genie_text": "En 2025, el parque **Pico Truncado Alto** tuvo **344 horas** con orden de CAMMESA. Esta cifra corresponde exclusivamente al año 2025 para ese parque.",
-  "match": true
+  "genie_status": "FAILED",
+  "genie_sql": null,
+  "genie_rows": [],
+  "genie_text": "",
+  "match": false
  },
  {
   "agent": "04_finanzas_mercado",
@@ -2230,15 +1931,10 @@
     "8688"
    ]
   ],
-  "genie_status": "COMPLETED",
-  "genie_sql": "SELECT `Motivo`, COUNT(*) AS frecuencia\nFROM andes_viento_dev.gold.mv_curtailment\nGROUP BY `Motivo`\nORDER BY frecuencia DESC\nLIMIT 1",
-  "genie_rows": [
-   [
-    "SIN_ORDEN",
-    "284015"
-   ]
-  ],
-  "genie_text": "El motivo más frecuente de las órdenes de CAMMESA es **SIN_ORDEN**, con un total de **284.015** casos registrados. Este motivo supera ampliamente a cualquier otro en la base de datos analizada.",
+  "genie_status": "FAILED",
+  "genie_sql": null,
+  "genie_rows": [],
+  "genie_text": "",
   "match": false
  },
  {
@@ -2250,14 +1946,10 @@
     "1.59936E7"
    ]
   ],
-  "genie_status": "COMPLETED",
-  "genie_sql": "SELECT SUM(battery_capex_usd) AS total_inversion_usd\nFROM (\n  SELECT mc.park_code, MAX(mc.battery_capex_usd) AS battery_capex_usd\n  FROM `andes_viento_dev`.`gold`.`mart_curtailment_battery` mc\n  JOIN `andes_viento_dev`.`gold`.`dim_park` dp ON mc.park_code = dp.park_code\n  WHERE mc.option_code ILIKE '%BESS-10x4%'\n    AND dp.technology ILIKE '%eólico%'\n    AND mc.battery_capex_usd IS NOT NULL\n  GROUP BY mc.park_code\n)",
-  "genie_rows": [
-   [
-    "1.59936E7"
-   ]
-  ],
-  "genie_text": "La **inversión total** si se instala la opción **BESS-10x4** en todos los parques eólicos es de **USD 15.993.600**. Este valor corresponde a la suma del CAPEX de baterías para cada parque eólico con esa opción.",
-  "match": true
+  "genie_status": "FAILED",
+  "genie_sql": null,
+  "genie_rows": [],
+  "genie_text": "",
+  "match": false
  }
 ]

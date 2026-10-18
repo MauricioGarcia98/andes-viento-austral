@@ -34,6 +34,8 @@ instructions: |
   - Contar turbinas: count(DISTINCT turbine_id) FROM dim_turbine WHERE is_current AND turbine_key <> -1 (es SCD2: hay una fila por versión).
   - Al unir hechos con dim_turbine por turbine_key NO filtres is_current: la clave apunta a la versión vigente en ese momento.
     Para ver el nombre actual, uní por turbine_id con la versión is_current.
+  - La fecha de una falla es created_date (cuando se abrió la orden). work_end_ts es cuando terminó la reparación:
+    una falla de fin de julio puede terminar en agosto.
   - Componentes (códigos): GEARBOX = multiplicadora, MAIN_BEARING = rodamiento principal, GENERATOR_BEARING = rodamiento del generador.
   - En las funciones, para "todos los parques" pasá NULL (sin comillas), nunca el texto 'NULL'.
 sample_questions:

@@ -214,6 +214,20 @@ y del sensor de suciedad sin intervención.
   un formulario web.
 </details>
 
+<details open>
+<summary><b>R13 · El job diario "deshizo" los arreglos: Finanzas pasó de 17/21 a 0/21</b></summary>
+
+- **Qué pasó:** los arreglos de R11 y R12 los apliqué a mano (`runsql.py`) y commiteé, pero **no** hice
+  `databricks bundle deploy -t dev`. El job diario corrió `gold_marts` y `semantic_layer` con la copia vieja del SQL que
+  estaba en el workspace y recreó `fn_perdida_curtailment` con parámetros `DATE`. Resultado: el agent Finanzas falló
+  en las 21 preguntas (los otros 3 casi no usan esa función como certificada).
+- **Arreglo:** `bundle deploy` de dev y prod, reaplicar el SQL y, para que no vuelva a pasar en silencio,
+  `deploy_genie.py` ahora **revisa los parámetros de cada función confiable** antes de desplegar y corta con un
+  mensaje claro si encuentra `DATE`/`TIMESTAMP`.
+- **Lección:** lo que está en el workspace es lo último que **desplegaste**, no lo último que commiteaste. Un arreglo
+  "a mano" en el catálogo dura hasta la próxima corrida del job. Por eso CI despliega siempre desde git.
+</details>
+
 ## Tiempos reales por tarea
 
 Corrida #3 en dev (`run_id 486286601686508`, `scale_factor = 0.1`, serverless de Free Edition): **12/12 SUCCESS**.

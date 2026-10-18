@@ -48,6 +48,24 @@ def render(doc: dict, catalog: str, target: str) -> tuple[str, str, str]:
     return title, doc["description"], space
 
 
+UNSUPPORTED_PARAM_TYPES = {"DATE", "TIMESTAMP", "TIMESTAMP_NTZ", "INTERVAL"}
+
+
+def check_functions(w: WorkspaceClient, space: str) -> None:
+    """Falla antes de desplegar si una función confiable tiene parámetros que Genie no acepta.
+
+    Genie acepta el deploy igual, pero después rechaza TODAS las preguntas del agent
+    (INVALID_CERTIFIED_ANSWER_FUNCTION_EXCEPTION). Ver R11 y R13 en docs/08_bitacora.md.
+    """
+    for f in json.loads(space).get("instructions", {}).get("sql_functions", []):
+        info = w.functions.get(f["identifier"])
+        bad = [p.name for p in (info.input_params.parameters if info.input_params else [])
+               if str(p.type_name.value if p.type_name else "").upper() in UNSUPPORTED_PARAM_TYPES]
+        if bad:
+            raise SystemExit(f"{f['identifier']}: parámetros {bad} no admitidos por Genie (usá STRING 'yyyy-MM-dd'). "
+                             "¿Te olvidaste de 'databricks bundle deploy' antes de correr el job?")
+
+
 def deploy(target: str, only: list[str] | None, warehouse_name: str, catalog: str | None) -> dict[str, str]:
     w = WorkspaceClient()
     wh = find_warehouse(w, warehouse_name)
@@ -58,6 +76,7 @@ def deploy(target: str, only: list[str] | None, warehouse_name: str, catalog: st
             continue
         doc = json.loads(path.read_text(encoding="utf-8"))
         title, description, space = render(doc, catalog or CATALOGS[target], target)
+        check_functions(w, space)
         body = {"title": title, "description": description, "warehouse_id": wh, "serialized_space": space}
         if title in existing:
             sid = existing[title]
