@@ -91,7 +91,7 @@ benchmarks:
   - q: "¿Cuánto costó la mano de obra en pesos en 2024 vs 2023?"
     sql: "SELECT year(created_date) AS anio, round(sum(labor_cost_ars), 0) FROM ${catalog}.gold.fact_maintenance_order WHERE year(created_date) IN (2023, 2024) GROUP BY 1 ORDER BY 1"
   - q: "¿Qué parque tiene más horas de falla en 2025?"
-    sql: "SELECT park_code, round(sum(fault_h), 1) AS horas FROM ${catalog}.gold.fact_availability_daily WHERE year(reading_date) = 2025 GROUP BY park_code ORDER BY horas DESC LIMIT 1"
+    sql: "SELECT p.park_name, round(sum(f.fault_h), 1) AS horas FROM ${catalog}.gold.fact_availability_daily f JOIN ${catalog}.gold.dim_park p ON p.park_key = f.park_key WHERE year(f.reading_date) = 2025 GROUP BY p.park_name ORDER BY horas DESC LIMIT 1"
   - q: "Disponibilidad contractual móvil 12 meses de Cañadón León en el último mes"
     sql: "SELECT availability_12m FROM ${catalog}.gold.mart_warranty_claims WHERE park_code = 'LEO' AND month_start = (SELECT max(month_start) FROM ${catalog}.gold.mart_warranty_claims)"
   - q: "¿En cuántos casos parque-mes corresponde reclamar al fabricante Hanse Turbinen Werke?"

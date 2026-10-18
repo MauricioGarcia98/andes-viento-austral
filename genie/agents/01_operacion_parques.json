@@ -480,7 +480,7 @@
             {
               "format": "SQL",
               "content": [
-                "SELECT park_code, count_if(is_cleaning_end) AS limpiezas FROM ${catalog}.gold.mart_panel_cleaning WHERE year(reading_date) = 2025 GROUP BY park_code ORDER BY park_code"
+                "SELECT p.park_name, count_if(c.is_cleaning_end) AS limpiezas FROM ${catalog}.gold.mart_panel_cleaning c JOIN ${catalog}.gold.dim_park p USING (park_code) WHERE year(c.reading_date) = 2025 GROUP BY p.park_name"
               ]
             }
           ]

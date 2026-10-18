@@ -74,15 +74,15 @@
             "- El curtailment se valoriza de dos formas: a precio spot del nodo (lost_value_spot_usd, bajo porque el nodo Patagonia\n",
             "  se desacopla con congestión) y a precio de realización PPA (v_park_price_month). Aclarar siempre cuál se usa.\n",
             "- Para baterías usá fn_ranking_baterias(meses): repago simple = CAPEX / valor anual recuperado.\n",
-            "- Para explicar un desvío de un parque en un mes usá fn_explicar_desvio(parque, 'yyyy-MM').\n",
+            "- Para explicar un desvío de UN parque en UN mes usá las columnas de la cascada de mart_generation_vs_budget\n",
+            "  (resource_effect_mwh, lost_curtailment_mwh, lost_icing_mwh...). La cascada certificada vive en el agent de Operación.\n",
             "- \"Este año\" = el año del último mes con datos de mart_generation_vs_budget. Nunca uses current_date().\n",
             "- Inflación: los costos en pesos suben mes a mes; compará en USD para ver costo real.\n",
             "- Capex de baterías: usá fn_ranking_baterias (una fila por parque y opción). mart_curtailment_battery es mensual:\n",
             "  sumar battery_capex_usd ahí multiplica la inversión por la cantidad de meses.\n",
             "- Repago = simple_payback_years (años). ranking es sólo la posición.\n",
             "- fn_perdida_curtailment trae una fila por parque y una última fila 'TOTAL EMPRESA' con el total.\n",
-            "- fn_explicar_desvio es para UN parque y UN mes. Para el desvío de toda la empresa, de una región o de un año\n",
-            "  sumá mart_generation_vs_budget: sum(actual_mwh) - sum(budget_p50_mwh) y sum(actual_mwh) / sum(budget_p50_mwh) - 1.\n",
+            "- Para el desvío de toda la empresa, de una región o de un año sumá mart_generation_vs_budget: sum(actual_mwh) - sum(budget_p50_mwh) y sum(actual_mwh) / sum(budget_p50_mwh) - 1.\n",
             "- El mes en curso es parcial (is_month_to_date = true): su presupuesto ya está prorrateado; avisalo al responder.\n",
             "- Órdenes de CAMMESA = horas con has_instruction = true (el Motivo es NULL cuando no hay orden).\n",
             "- El curtailment que asume el presupuesto es un porcentaje: mart_generation_vs_budget.assumed_curtailment (0,04 = 4 %).\n",
@@ -204,10 +204,6 @@
         }
       ],
       "sql_functions": [
-        {
-          "id": "272520e3ce602e4c860018bf8f19a22c",
-          "identifier": "${catalog}.gold.fn_explicar_desvio"
-        },
         {
           "id": "65de1c92e24a5867fe835f506e080eaa",
           "identifier": "${catalog}.gold.fn_ranking_baterias"

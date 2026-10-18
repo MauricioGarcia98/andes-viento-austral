@@ -102,7 +102,7 @@ benchmarks:
   - q: "¿Cuál es la pérdida por suciedad de Susques Solar en 2025 en MWh?"
     sql: "SELECT round(sum(soiling_lost_mwh), 1) FROM ${catalog}.gold.mart_panel_cleaning WHERE park_code = 'SUS' AND year(reading_date) = 2025"
   - q: "¿Cuántas limpiezas de paneles se hicieron en 2025 por parque?"
-    sql: "SELECT park_code, count_if(is_cleaning_end) AS limpiezas FROM ${catalog}.gold.mart_panel_cleaning WHERE year(reading_date) = 2025 GROUP BY park_code ORDER BY park_code"
+    sql: "SELECT p.park_name, count_if(c.is_cleaning_end) AS limpiezas FROM ${catalog}.gold.mart_panel_cleaning c JOIN ${catalog}.gold.dim_park p USING (park_code) WHERE year(c.reading_date) = 2025 GROUP BY p.park_name"
   - q: "¿Qué parques solares hay que limpiar según el último día?"
     sql: "SELECT park_name, recommendation FROM ${catalog}.gold.fn_recomendacion_limpieza(NULL) WHERE recommendation = 'LIMPIAR'"
   - q: "Suciedad media de los paneles de Abra Pampa en septiembre 2025"

@@ -17,7 +17,7 @@ Target `dev` · generado por `scripts/genie_eval.py`.
 | 01_operacion_parques | ¿En qué mes de 2025 la empresa generó más? | `2025-11, 84174.9` | ✅ |
 | 01_operacion_parques | ¿Cuántos días con condición 'Nevada' tuvo Cañadón León en 2025? | `4` | ✅ |
 | 01_operacion_parques | ¿Cuál es la pérdida por suciedad de Susques Solar en 2025 en MWh? | `1743.3` | ✅ |
-| 01_operacion_parques | ¿Cuántas limpiezas de paneles se hicieron en 2025 por parque? | `ABR, 5` | ✅ |
+| 01_operacion_parques | ¿Cuántas limpiezas de paneles se hicieron en 2025 por parque? | `ABR, 5` | ❌ |
 | 01_operacion_parques | ¿Qué parques solares hay que limpiar según el último día? | `Tinogasta Sol, LIMPIAR` | ✅ |
 | 01_operacion_parques | Suciedad media de los paneles de Abra Pampa en septiembre 2025 | `4.88` | ✅ |
 | 01_operacion_parques | ¿Cuánta energía perdió la empresa por curtailment en 2025? | `10856.0` | ✅ |
@@ -30,14 +30,14 @@ Target `dev` · generado por `scripts/genie_eval.py`.
 | 02_mantenimiento_predictivo | ¿Cuántas turbinas tiene cada fabricante? | `Aurora Wind Systems, 13` | ✅ |
 | 02_mantenimiento_predictivo | ¿Cuántas fallas mayores hubo en total? | `26` | ✅ |
 | 02_mantenimiento_predictivo | ¿Cuántas fallas mayores de multiplicadora hubo en 2025? | `9` | ✅ |
-| 02_mantenimiento_predictivo | ¿Cuántos días estuvo parada la turbina de Cañadón León que rompió la multiplicadora en julio 2025? | `21.0` | ✅ |
+| 02_mantenimiento_predictivo | ¿Cuántos días estuvo parada la turbina de Cañadón León que rompió la multiplicadora en julio 2025? | `21.0` | ❌ |
 | 02_mantenimiento_predictivo | MTTR de correctivas en 2025 en horas | `96.1` | ✅ |
 | 02_mantenimiento_predictivo | ¿Cuántas órdenes preventivas se hicieron en 2024? | `73` | ✅ |
 | 02_mantenimiento_predictivo | ¿Cuál fue el costo total de mantenimiento en USD en 2025? | `2745859.0` | ✅ |
 | 02_mantenimiento_predictivo | ¿Cuánto costó la mano de obra en pesos en 2024 vs 2023? | `2023, 1.11414916E8` | ✅ |
-| 02_mantenimiento_predictivo | ¿Qué parque tiene más horas de falla en 2025? | `PIC, 2277.3` | ✅ |
+| 02_mantenimiento_predictivo | ¿Qué parque tiene más horas de falla en 2025? | `PIC, 2277.3` | ❌ |
 | 02_mantenimiento_predictivo | Disponibilidad contractual móvil 12 meses de Cañadón León en el último mes | `0.99942` | ✅ |
-| 02_mantenimiento_predictivo | ¿En cuántos meses corresponde reclamar al fabricante Hanse Turbinen Werke? | `50` | ❌ |
+| 02_mantenimiento_predictivo | ¿En cuántos casos parque-mes corresponde reclamar al fabricante Hanse Turbinen Werke? | `50` | ✅ |
 | 02_mantenimiento_predictivo | ¿Cuántos USD de liquidated damages se devengaron en total? | `823906.0` | ✅ |
 | 02_mantenimiento_predictivo | ¿Cuántas turbinas están en riesgo alto hoy? | `0` | ✅ |
 | 02_mantenimiento_predictivo | ¿Cuántas versiones tiene la turbina WTG00033 en dim_turbine? | `3` | ✅ |
@@ -66,11 +66,11 @@ Target `dev` · generado por `scripts/genie_eval.py`.
 | 03_comercial_ppa | ¿Qué recomendación hay hoy para el contrato del Data Center Austral? | `EN_CAMINO` | ✅ |
 | 03_comercial_ppa | ¿Cuántos contratos proyectan faltante este mes? | `0` | ✅ |
 | 03_comercial_ppa | Cumplimiento proyectado de la papelera este mes | `1.0` | ✅ |
-| 03_comercial_ppa | ¿Cuál fue el mes con mayor costo en USD de faltantes (mejor opción) en toda la historia? | `2025-06, 222848.0` | ❌ |
+| 03_comercial_ppa | ¿Cuál fue el mes con mayor costo en USD de faltantes (mejor opción), sumando todos los contratos? | `2025-06, 222848.0` | ✅ |
 | 03_comercial_ppa | Volumen comprometido total mensual de la cartera vigente | `39554.4` | ✅ |
 | 03_comercial_ppa | ¿Cuántos clientes son del sector Minería? | `1` | ✅ |
 | 04_finanzas_mercado | ¿Cuántos MWh se perdieron por curtailment en 2024? | `11215.3` | ✅ |
-| 04_finanzas_mercado | ¿Creció el curtailment de 2023 a 2025? | `2023, 4340.6` | ❌ |
+| 04_finanzas_mercado | ¿Creció el curtailment de 2023 a 2025? | `2023, 4340.6` | ✅ |
 | 04_finanzas_mercado | ¿Qué parque perdió más energía por curtailment en 2025? | `Cañadón León, 3719.5` | ✅ |
 | 04_finanzas_mercado | ¿Qué porcentaje del potencial perdió San Julián Meseta por curtailment en 2025? | `0.0297` | ✅ |
 | 04_finanzas_mercado | Valor a precio spot del curtailment de 2025 | `146078.0` | ✅ |
@@ -87,13 +87,13 @@ Target `dev` · generado por `scripts/genie_eval.py`.
 | 04_finanzas_mercado | Costo de mantenimiento total en USD en 2023 | `715537.0` | ✅ |
 | 04_finanzas_mercado | Precio de realización PPA de Cañadón León en julio 2025 | `73.87` | ✅ |
 | 04_finanzas_mercado | ¿Cuál fue el efecto del recurso (viento) en el desvío de Cañadón León en julio 2025? | `-279.9` | ✅ |
-| 04_finanzas_mercado | ¿Cuántas horas con orden de CAMMESA tuvo Pico Truncado Alto en 2025? | `344` | ❌ |
+| 04_finanzas_mercado | ¿Cuántas horas con orden de CAMMESA tuvo Pico Truncado Alto en 2025? | `344` | ✅ |
 | 04_finanzas_mercado | ¿Cuál es el motivo más frecuente de las órdenes de CAMMESA? | `RESTRICCION_TRANSPORTE, 8688` | ✅ |
-| 04_finanzas_mercado | Inversión total si se instala BESS-10x4 en todos los parques eólicos | `1.59936E7` | ❌ |
+| 04_finanzas_mercado | Inversión total si se instala BESS-10x4 en todos los parques eólicos | `1.59936E7` | ✅ |
 
 | agent | benchmarks | aciertos |
 |---|---|---|
-| 01_operacion_parques | 22 | 22 |
-| 02_mantenimiento_predictivo | 22 | 21 |
-| 03_comercial_ppa | 21 | 20 |
-| 04_finanzas_mercado | 21 | 15 |
+| 01_operacion_parques | 22 | 21 |
+| 02_mantenimiento_predictivo | 22 | 20 |
+| 03_comercial_ppa | 21 | 21 |
+| 04_finanzas_mercado | 21 | 18 |
