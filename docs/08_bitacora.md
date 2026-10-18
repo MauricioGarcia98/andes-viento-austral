@@ -191,6 +191,17 @@ y del sensor de suciedad sin intervención.
 - **Lección:** los números del "por qué" se documentan con lo que dio la corrida real, no con lo que se esperaba.
 </details>
 
+<details open>
+<summary><b>R11 · Genie: <code>INVALID_CERTIFIED_ANSWER_FUNCTION_EXCEPTION ... argument type is not supported: date</code></b></summary>
+
+- **Qué pasó:** la primera evaluación de benchmarks dio **0 aciertos**. No era el comparador: Genie rechazaba la
+  configuración COMPLETA del agent porque `fn_perdida_curtailment` tenía parámetros `DATE`, y las funciones confiables
+  (*certified answers*) no los admiten. El deploy por API no falla: el error aparece recién al preguntar.
+- **Cómo lo encontramos:** una pregunta suelta con `scripts/genie_ask.py` mostró el error completo.
+- **Arreglo:** parámetros `STRING 'yyyy-MM-dd'` y `to_date()` adentro. La misma pregunta volvió con 350,0 MWh (exacto).
+- **Lección:** después de desplegar un agent, **hacele una pregunta** antes de dar el deploy por bueno (lo hace `genie_eval.py`).
+</details>
+
 ## Tiempos reales por tarea
 
 <!-- TIEMPOS -->

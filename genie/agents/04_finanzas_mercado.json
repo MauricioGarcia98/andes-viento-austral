@@ -106,7 +106,7 @@
             "¿Cuántos MWh y USD perdimos por curtailment en 2025?"
           ],
           "sql": [
-            "SELECT * FROM ${catalog}.gold.fn_perdida_curtailment(NULL, DATE'2025-01-01', DATE'2025-12-31') ORDER BY curtailed_mwh DESC"
+            "SELECT * FROM ${catalog}.gold.fn_perdida_curtailment(NULL, '2025-01-01', '2025-12-31') ORDER BY curtailed_mwh DESC"
           ]
         },
         {

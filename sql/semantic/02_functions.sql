@@ -5,12 +5,14 @@
 -- dueña), se escribe como función. Genie la invoca con parámetros y marca la respuesta
 -- como confiable ("Trusted"). Parámetros con DEFAULT NULL = "todos".
 -- Los parques se pueden pasar por código (LEO) o por nombre (Cañadón León).
+-- Error real (bitácora): Genie NO acepta parámetros DATE en funciones confiables
+-- ("certified answer argument type is not supported: date"): las fechas van como STRING 'yyyy-MM-dd'.
 -- =============================================================================
 
 CREATE OR REPLACE FUNCTION ${gold}.fn_perdida_curtailment(
     p_parque STRING DEFAULT NULL COMMENT 'Código o nombre del parque; NULL = todos',
-    p_desde DATE DEFAULT NULL COMMENT 'Fecha inicial (incluida); NULL = desde el inicio',
-    p_hasta DATE DEFAULT NULL COMMENT 'Fecha final (incluida); NULL = hasta el último dato')
+    p_desde STRING DEFAULT NULL COMMENT 'Fecha inicial yyyy-MM-dd (incluida); NULL = desde el inicio',
+    p_hasta STRING DEFAULT NULL COMMENT 'Fecha final yyyy-MM-dd (incluida); NULL = hasta el último dato')
 RETURNS TABLE (park_name STRING, curtailed_mwh DOUBLE, curtailed_pct_of_potential DOUBLE,
                value_at_spot_usd DOUBLE, value_at_ppa_usd DOUBLE, hours_with_order BIGINT)
 COMMENT 'Energía perdida por curtailment (MWh), % del potencial y su valor a spot y a precio PPA, por parque'
@@ -25,8 +27,8 @@ RETURN
     JOIN ${gold}.dim_park p ON p.park_key = f.park_key
     LEFT JOIN ${gold}.v_park_price_month pr ON pr.park_code = f.park_code AND pr.month_start = trunc(f.reading_date, 'MM')
     WHERE (p_parque IS NULL OR upper(p.park_code) = upper(p_parque) OR lower(p.park_name) = lower(p_parque))
-      AND (p_desde IS NULL OR f.reading_date >= p_desde)
-      AND (p_hasta IS NULL OR f.reading_date <= p_hasta)
+      AND (p_desde IS NULL OR f.reading_date >= to_date(p_desde))
+      AND (p_hasta IS NULL OR f.reading_date <= to_date(p_hasta))
     GROUP BY p.park_name;
 
 CREATE OR REPLACE FUNCTION ${gold}.fn_ranking_baterias(
