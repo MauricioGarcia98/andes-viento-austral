@@ -1,0 +1,130 @@
+title: "Andes · Finanzas y mercado"
+domain: Comercial
+description: >-
+  Para Finanzas y Riesgo: valor del curtailment, caso de inversión en baterías, desvío vs. presupuesto en
+  MWh y USD, precios spot de CAMMESA, dólar e inflación en los costos.
+users: "Diego Achával (CFO), Camila Iturbe (Riesgo de Mercado) y Lucía Ferreyra (CEO)"
+tables:
+  - gold.mart_generation_vs_budget
+  - gold.mart_curtailment_battery
+  - gold.fact_curtailment_hourly
+  - gold.fact_maintenance_order
+  - gold.dim_park
+  - gold.dim_date
+  - gold.v_park_price_month
+metric_views:
+  - gold.mv_curtailment
+  - gold.mv_generacion
+functions:
+  - gold.fn_ranking_baterias
+  - gold.fn_perdida_curtailment
+instructions: |
+  Sos el asistente de Finanzas de Andes Viento Austral.
+  - Moneda: USD salvo pedido explícito de pesos. Para pasar pesos a dólares usá dim_date.fx_ars_usd del día (BNA vendedor).
+  - El curtailment se valoriza de dos formas: a precio spot del nodo (lost_value_spot_usd, bajo porque el nodo Patagonia
+    se desacopla con congestión) y a precio de realización PPA (v_park_price_month). Aclarar siempre cuál se usa.
+  - Para baterías usá fn_ranking_baterias(meses): repago simple = CAPEX / valor anual recuperado.
+  - Para explicar un desvío de UN parque en UN mes usá las columnas de la cascada de mart_generation_vs_budget
+    (resource_effect_mwh, lost_curtailment_mwh, lost_icing_mwh...). La cascada certificada vive en el agent de Operación.
+  - "Este año" = el año del último mes con datos de mart_generation_vs_budget. Nunca uses current_date().
+  - Inflación: los costos en pesos suben mes a mes; compará en USD para ver costo real.
+  - Capex de baterías: usá fn_ranking_baterias (una fila por parque y opción). mart_curtailment_battery es mensual:
+    sumar battery_capex_usd ahí multiplica la inversión por la cantidad de meses.
+  - Repago = simple_payback_years (años). ranking es sólo la posición.
+  - fn_perdida_curtailment trae una fila por parque y una última fila 'TOTAL EMPRESA' con el total.
+  - Para el desvío de toda la empresa, de una región o de un año sumá mart_generation_vs_budget: sum(actual_mwh) - sum(budget_p50_mwh) y sum(actual_mwh) / sum(budget_p50_mwh) - 1.
+  - El mes en curso es parcial (is_month_to_date = true): su presupuesto ya está prorrateado; avisalo al responder.
+  - Órdenes de CAMMESA = horas con has_instruction = true (el Motivo es NULL cuando no hay orden).
+  - El curtailment que asume el presupuesto es un porcentaje: mart_generation_vs_budget.assumed_curtailment (0,04 = 4 %).
+  - En las funciones, para "todos los parques" pasá NULL (sin comillas), nunca el texto 'NULL'.
+sample_questions:
+  - "¿Cuántos MWh y USD perdimos por curtailment en 2025?"
+  - "¿En qué parque conviene invertir en baterías?"
+  - "¿Cuánto nos costó en USD el desvío contra presupuesto de este año?"
+  - "¿Por qué subió el costo de mantenimiento en dólares en 2024 si la inflación bajó?"
+examples:
+  - question: "Desvío contra presupuesto de toda la empresa en un año (MWh y %)"
+    sql: |
+      SELECT year, round(sum(actual_mwh) - sum(budget_p50_mwh), 1) AS desvio_mwh,
+             round(sum(actual_mwh) / sum(budget_p50_mwh) - 1, 4) AS desvio_pct
+      FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2025 GROUP BY year
+  - question: "¿Qué curtailment y disponibilidad asumía el presupuesto por región?"
+    sql: |
+      SELECT year, region, max(assumed_curtailment) AS curtailment_supuesto, max(assumed_availability) AS disponibilidad_supuesta
+      FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2025 GROUP BY ALL
+  - question: "Curtailment de la empresa por año"
+    sql: |
+      SELECT year(reading_date) AS anio, round(sum(lost_curtailment_mwh), 1) AS mwh, round(sum(lost_value_spot_usd), 0) AS usd_spot
+      FROM ${catalog}.gold.fact_curtailment_hourly GROUP BY ALL ORDER BY anio
+  - question: "Horas con orden de CAMMESA por parque en un año"
+    sql: |
+      SELECT p.park_name, count_if(f.has_instruction) AS horas_con_orden
+      FROM ${catalog}.gold.fact_curtailment_hourly f JOIN ${catalog}.gold.dim_park p ON p.park_key = f.park_key
+      WHERE year(f.reading_date) = 2025 GROUP BY ALL ORDER BY horas_con_orden DESC
+  - question: "Inversión total si se instala una opción de batería en todos los parques"
+    sql: "SELECT option_code, sum(battery_capex_usd) AS capex_total_usd FROM ${catalog}.gold.fn_ranking_baterias(12) WHERE option_code = 'BESS-30x2' GROUP BY option_code"
+  - question: "¿Cuántos MWh y USD perdimos por curtailment en 2025?"
+    sql: "SELECT * FROM ${catalog}.gold.fn_perdida_curtailment(NULL, '2025-01-01', '2025-12-31')"
+  - question: "¿En qué parque conviene invertir en baterías?"
+    sql: "SELECT * FROM ${catalog}.gold.fn_ranking_baterias(12) ORDER BY ranking LIMIT 5"
+  - question: "Curtailment mensual en % del potencial (metric view)"
+    sql: |
+      SELECT `Mes`, round(MEASURE(`Curtailment (% del potencial)`) * 100, 2) AS curtailment_pct,
+             round(MEASURE(`Energía perdida por curtailment (MWh)`), 1) AS mwh
+      FROM ${catalog}.gold.mv_curtailment GROUP BY ALL ORDER BY `Mes`
+  - question: "Desvío de generación valorizado en USD por año"
+    sql: |
+      SELECT year, round(sum(variance_mwh), 1) AS desvio_mwh, round(sum(variance_value_usd), 0) AS desvio_usd
+      FROM ${catalog}.gold.mart_generation_vs_budget GROUP BY year ORDER BY year
+  - question: "Costo de mantenimiento por año en pesos y en dólares"
+    sql: |
+      SELECT year(created_date) AS anio, round(sum(labor_cost_ars), 0) AS mano_obra_ars,
+             round(sum(labor_cost_usd), 0) AS mano_obra_usd, round(sum(total_cost_usd), 0) AS total_usd
+      FROM ${catalog}.gold.fact_maintenance_order GROUP BY 1 ORDER BY 1
+  - question: "Precio spot medio por nodo y año en USD/MWh"
+    sql: |
+      SELECT cammesa_node, year(reading_date) AS anio, round(avg(spot_usd_mwh), 2) AS spot_usd
+      FROM ${catalog}.gold.fact_curtailment_hourly GROUP BY ALL ORDER BY anio, cammesa_node
+benchmarks:
+  - q: "¿Cuántos MWh se perdieron por curtailment en 2024?"
+    sql: "SELECT round(sum(lost_curtailment_mwh), 1) FROM ${catalog}.gold.fact_curtailment_hourly WHERE year(reading_date) = 2024"
+  - q: "¿Creció el curtailment de 2023 a 2025?"
+    sql: "SELECT year(reading_date) AS anio, round(sum(lost_curtailment_mwh), 1) FROM ${catalog}.gold.fact_curtailment_hourly WHERE year(reading_date) BETWEEN 2023 AND 2025 GROUP BY 1 ORDER BY 1"
+  - q: "¿Qué parque perdió más energía por curtailment en 2025?"
+    sql: "SELECT p.park_name, round(sum(f.lost_curtailment_mwh), 1) AS mwh FROM ${catalog}.gold.fact_curtailment_hourly f JOIN ${catalog}.gold.dim_park p ON p.park_key = f.park_key WHERE year(f.reading_date) = 2025 GROUP BY p.park_name ORDER BY mwh DESC LIMIT 1"
+  - q: "¿Qué porcentaje del potencial perdió San Julián Meseta por curtailment en 2025?"
+    sql: "SELECT round(sum(lost_curtailment_mwh) / sum(potential_mwh), 4) FROM ${catalog}.gold.fact_curtailment_hourly WHERE park_code = 'SJU' AND year(reading_date) = 2025"
+  - q: "Valor a precio spot del curtailment de 2025"
+    sql: "SELECT round(sum(lost_value_spot_usd), 0) FROM ${catalog}.gold.fact_curtailment_hourly WHERE year(reading_date) = 2025"
+  - q: "¿Qué parque y tamaño de batería tiene el mejor repago?"
+    sql: "SELECT park_name, option_code FROM ${catalog}.gold.fn_ranking_baterias(12) WHERE ranking = 1"
+  - q: "¿Cuántos años de repago tiene la batería BESS-20x4 en Cañadón León?"
+    sql: "SELECT simple_payback_years FROM ${catalog}.gold.fn_ranking_baterias(12) WHERE park_name = 'Cañadón León' AND option_code = 'BESS-20x4'"
+  - q: "¿A qué hora local se pierde más energía por curtailment?"
+    sql: "SELECT hour(hour_local) AS hora, round(sum(lost_curtailment_mwh), 1) AS mwh FROM ${catalog}.gold.fact_curtailment_hourly GROUP BY 1 ORDER BY mwh DESC LIMIT 1"
+  - q: "¿Cuál fue el dólar oficial el 13 de diciembre de 2023?"
+    sql: "SELECT fx_ars_usd FROM ${catalog}.gold.dim_date WHERE date = '2023-12-13'"
+  - q: "Precio spot medio del nodo Patagonia en 2025 en USD/MWh"
+    sql: "SELECT round(avg(spot_usd_mwh), 2) FROM ${catalog}.gold.fact_curtailment_hourly WHERE cammesa_node = 'PATAGONIA' AND year(reading_date) = 2025"
+  - q: "Precio spot medio en horas con curtailment vs sin curtailment en Patagonia"
+    sql: "SELECT has_instruction, round(avg(spot_usd_mwh), 2) FROM ${catalog}.gold.fact_curtailment_hourly WHERE cammesa_node = 'PATAGONIA' GROUP BY has_instruction"
+  - q: "Desvío total en MWh vs presupuesto de toda la empresa en 2025"
+    sql: "SELECT round(sum(variance_mwh), 1) FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2025"
+  - q: "Desvío porcentual vs presupuesto de toda la empresa en 2024"
+    sql: "SELECT round(sum(actual_mwh) / sum(budget_p50_mwh) - 1, 4) FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2024"
+  - q: "¿Qué porcentaje de curtailment asumía el presupuesto 2025 para la Patagonia?"
+    sql: "SELECT DISTINCT assumed_curtailment FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2025 AND region = 'PATAGONIA'"
+  - q: "¿Cuánto costó la mano de obra de mantenimiento en dólares en 2024?"
+    sql: "SELECT round(sum(labor_cost_usd), 0) FROM ${catalog}.gold.fact_maintenance_order WHERE year(created_date) = 2024"
+  - q: "Costo de mantenimiento total en USD en 2023"
+    sql: "SELECT round(sum(total_cost_usd), 0) FROM ${catalog}.gold.fact_maintenance_order WHERE year(created_date) = 2023"
+  - q: "Precio de realización PPA de Cañadón León en julio 2025"
+    sql: "SELECT ppa_price_usd_mwh FROM ${catalog}.gold.v_park_price_month WHERE park_code = 'LEO' AND month_start = '2025-07-01'"
+  - q: "¿Cuál fue el efecto del recurso (viento) en el desvío de Cañadón León en julio 2025?"
+    sql: "SELECT round(resource_effect_mwh, 1) FROM ${catalog}.gold.mart_generation_vs_budget WHERE park_code = 'LEO' AND year_month = '2025-07'"
+  - q: "¿Cuántas horas con orden de CAMMESA tuvo Pico Truncado Alto en 2025?"
+    sql: "SELECT count(*) FROM ${catalog}.gold.fact_curtailment_hourly WHERE park_code = 'PIC' AND has_instruction AND year(reading_date) = 2025"
+  - q: "¿Cuál es el motivo más frecuente de las órdenes de CAMMESA?"
+    sql: "SELECT grid_reason, count(*) AS horas FROM ${catalog}.gold.fact_curtailment_hourly WHERE has_instruction GROUP BY grid_reason ORDER BY horas DESC LIMIT 1"
+  - q: "Inversión total si se instala BESS-10x4 en todos los parques eólicos"
+    sql: "SELECT round(sum(battery_capex_usd), 0) FROM ${catalog}.gold.fn_ranking_baterias(12) WHERE option_code = 'BESS-10x4'"

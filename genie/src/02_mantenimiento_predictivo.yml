@@ -1,0 +1,118 @@
+title: "Andes · Mantenimiento predictivo"
+domain: Operación
+description: >-
+  Para Mantenimiento y Confiabilidad: salud de turbinas (multiplicadora, rodamientos), órdenes de trabajo,
+  tiempos de parada, costos y disponibilidad contra la garantía del fabricante (97 %).
+users: "Ramiro Llancaqueo (Jefe de Mantenimiento), Joaquín Ortiz (Ing. de Confiabilidad), líderes de cuadrilla"
+tables:
+  - gold.mart_turbine_health
+  - gold.fact_maintenance_order
+  - gold.fact_availability_daily
+  - gold.mart_warranty_claims
+  - gold.dim_turbine
+  - gold.dim_park
+  - gold.dim_crew
+metric_views:
+  - gold.mv_mantenimiento
+  - gold.mv_salud_turbinas
+  - gold.mv_disponibilidad
+functions:
+  - gold.fn_turbinas_en_riesgo
+  - gold.fn_reclamos_garantia
+instructions: |
+  Sos el asistente de Mantenimiento de Andes Viento Austral.
+  - "Hoy" es el último día con datos (max(reading_date) de gold.mart_turbine_health). Nunca uses current_date().
+  - Riesgo de falla: usá fn_turbinas_en_riesgo(parque). health_score < 60 = riesgo ALTO; avisá el componente sospechado.
+  - Una turbina se identifica por turbine_tag (ej. CRV-WTG007) o turbine_id (WTG00031). En Cerro Arenales los nombres
+    cambiaron en jun-2024 ('CRV-07' -> 'CRV-WTG007'): para la versión vigente filtrá dim_turbine.is_current.
+  - Falla mayor = order_type 'CORRECTIVA' y severity 'MAYOR' (multiplicadora, rodamiento principal, rodamiento del generador).
+  - MTTR = promedio de downtime_hours de correctivas. Costos siempre en USD (total_cost_usd), salvo que pidan pesos.
+  - Disponibilidad contractual (garantía): usar mart_warranty_claims.availability_12m o la metric view mv_disponibilidad.
+    La garantía es 97 %; las horas de ruta cortada por nieve son fuerza mayor y no cuentan.
+  - Disponibilidad de la flota o de un año = MEASURE(`Disponibilidad contractual`) sin agrupar por parque. Nunca dividas ni promedies una MEASURE.
+  - "Horas de falla" sin más = fact_availability_daily.fault_h (todas). "Imputables" (chargeable_fault_h) sólo para garantía.
+  - Contar turbinas: count(DISTINCT turbine_id) FROM dim_turbine WHERE is_current AND turbine_key <> -1 (es SCD2: hay una fila por versión).
+  - Al unir hechos con dim_turbine por turbine_key NO filtres is_current: la clave apunta a la versión vigente en ese momento.
+    Para ver el nombre actual, uní por turbine_id con la versión is_current.
+  - La fecha de una falla es created_date (cuando se abrió la orden). work_end_ts es cuando terminó la reparación:
+    una falla de fin de julio puede terminar en agosto.
+  - Componentes (códigos): GEARBOX = multiplicadora, MAIN_BEARING = rodamiento principal, GENERATOR_BEARING = rodamiento del generador.
+  - En las funciones, para "todos los parques" pasá NULL (sin comillas), nunca el texto 'NULL'.
+sample_questions:
+  - "¿Qué turbinas tienen riesgo alto de falla hoy?"
+  - "¿Cuánto tardamos en promedio en reparar una multiplicadora en Santa Cruz?"
+  - "¿Corresponde reclamarle al fabricante por disponibilidad este año?"
+  - "¿Cuánto gastamos en correctivas mayores en 2025?"
+examples:
+  - question: "¿Qué turbinas tienen riesgo alto de falla hoy?"
+    sql: "SELECT * FROM ${catalog}.gold.fn_turbinas_en_riesgo(NULL) WHERE risk_level = 'ALTO'"
+  - question: "Tiempo medio de reparación de fallas mayores por componente y provincia"
+    sql: |
+      SELECT p.province, o.component, count(*) AS fallas, round(avg(o.downtime_hours) / 24, 1) AS dias_parada_promedio,
+             round(avg(o.waiting_hours) / 24, 1) AS dias_esperando_repuestos
+      FROM ${catalog}.gold.fact_maintenance_order o JOIN ${catalog}.gold.dim_park p USING (park_key)
+      WHERE o.order_type = 'CORRECTIVA' AND o.severity = 'MAYOR'
+      GROUP BY ALL ORDER BY dias_parada_promedio DESC
+  - question: "Disponibilidad móvil 12 meses por fabricante en el último mes (metric view)"
+    sql: |
+      SELECT `Fabricante`, round(MEASURE(`Disponibilidad contractual`) * 100, 2) AS disponibilidad_pct
+      FROM ${catalog}.gold.mv_disponibilidad
+      WHERE `Mes` >= date_format(add_months((SELECT max(month_start) FROM ${catalog}.gold.mart_warranty_claims), -11), 'yyyy-MM')
+      GROUP BY ALL
+  - question: "¿Cuánto hay para reclamar al fabricante en 2025?"
+    sql: "SELECT * FROM ${catalog}.gold.fn_reclamos_garantia(2025)"
+  - question: "Costo de mantenimiento en USD por año y tipo de orden"
+    sql: |
+      SELECT year(created_date) AS anio, order_type, round(sum(total_cost_usd), 0) AS costo_usd
+      FROM ${catalog}.gold.fact_maintenance_order GROUP BY ALL ORDER BY anio, order_type
+  - question: "¿Con cuántos días de anticipación detectó el modelo las fallas mayores?"
+    sql: |
+      SELECT turbine_id, next_major_failure_date, max(days_to_failure) AS dias_de_anticipacion
+      FROM ${catalog}.gold.mart_turbine_health
+      WHERE risk_level = 'ALTO' AND failure_within_30d
+      GROUP BY ALL ORDER BY next_major_failure_date
+benchmarks:
+  - q: "¿Cuántas turbinas hay en total?"
+    sql: "SELECT count(*) FROM ${catalog}.gold.dim_turbine WHERE is_current AND turbine_key <> -1"
+  - q: "¿Cuántas turbinas tiene cada fabricante?"
+    sql: "SELECT manufacturer, count(*) FROM ${catalog}.gold.dim_turbine WHERE is_current AND turbine_key <> -1 GROUP BY manufacturer"
+  - q: "¿Cuántas fallas mayores hubo en total?"
+    sql: "SELECT count(*) FROM ${catalog}.gold.fact_maintenance_order WHERE order_type = 'CORRECTIVA' AND severity = 'MAYOR'"
+  - q: "¿Cuántas fallas mayores de multiplicadora hubo en 2025?"
+    sql: "SELECT count(*) FROM ${catalog}.gold.fact_maintenance_order WHERE severity = 'MAYOR' AND component = 'GEARBOX' AND year(created_date) = 2025"
+  - q: "¿Cuántos días estuvo parada la turbina de Cañadón León que rompió la multiplicadora en julio 2025?"
+    sql: "SELECT round(downtime_hours / 24, 1) FROM ${catalog}.gold.fact_maintenance_order WHERE park_code = 'LEO' AND component = 'GEARBOX' AND severity = 'MAYOR' AND date_format(created_date, 'yyyy-MM') = '2025-07'"
+  - q: "MTTR de correctivas en 2025 en horas"
+    sql: "SELECT round(avg(downtime_hours), 1) FROM ${catalog}.gold.fact_maintenance_order WHERE order_type = 'CORRECTIVA' AND year(created_date) = 2025"
+  - q: "¿Cuántas órdenes preventivas se hicieron en 2024?"
+    sql: "SELECT count(*) FROM ${catalog}.gold.fact_maintenance_order WHERE order_type = 'PREVENTIVA' AND year(created_date) = 2024"
+  - q: "¿Cuál fue el costo total de mantenimiento en USD en 2025?"
+    sql: "SELECT round(sum(total_cost_usd), 0) FROM ${catalog}.gold.fact_maintenance_order WHERE year(created_date) = 2025"
+  - q: "¿Cuánto costó la mano de obra en pesos en 2024 vs 2023?"
+    sql: "SELECT year(created_date) AS anio, round(sum(labor_cost_ars), 0) FROM ${catalog}.gold.fact_maintenance_order WHERE year(created_date) IN (2023, 2024) GROUP BY 1 ORDER BY 1"
+  - q: "¿Qué parque tiene más horas de falla en 2025?"
+    sql: "SELECT p.park_name, round(sum(f.fault_h), 1) AS horas FROM ${catalog}.gold.fact_availability_daily f JOIN ${catalog}.gold.dim_park p ON p.park_key = f.park_key WHERE year(f.reading_date) = 2025 GROUP BY p.park_name ORDER BY horas DESC LIMIT 1"
+  - q: "Disponibilidad contractual móvil 12 meses de Cañadón León en el último mes"
+    sql: "SELECT availability_12m FROM ${catalog}.gold.mart_warranty_claims WHERE park_code = 'LEO' AND month_start = (SELECT max(month_start) FROM ${catalog}.gold.mart_warranty_claims)"
+  - q: "¿En cuántos casos parque-mes corresponde reclamar al fabricante Hanse Turbinen Werke?"
+    sql: "SELECT count(*) FROM ${catalog}.gold.mart_warranty_claims WHERE manufacturer = 'Hanse Turbinen Werke' AND claim_eligible"
+  - q: "¿Cuántos USD de liquidated damages se devengaron en total?"
+    sql: "SELECT round(sum(ld_accrued_usd), 0) FROM ${catalog}.gold.mart_warranty_claims"
+  - q: "¿Cuántas turbinas están en riesgo alto hoy?"
+    sql: "SELECT count(*) FROM ${catalog}.gold.mart_turbine_health WHERE risk_level = 'ALTO' AND reading_date = (SELECT max(reading_date) FROM ${catalog}.gold.mart_turbine_health)"
+  - q: "¿Cuántas versiones tiene la turbina WTG00033 en dim_turbine?"
+    sql: "SELECT count(*) FROM ${catalog}.gold.dim_turbine WHERE turbine_id = 'WTG00033'"
+  - q: "¿Cuántas multiplicadoras se reemplazaron?"
+    sql: "SELECT count(*) FROM ${catalog}.gold.dim_turbine WHERE change_reason = 'CAMBIO_MULTIPLICADORA'"
+  - q: "¿Cuántas turbinas fueron renombradas?"
+    sql: "SELECT count(DISTINCT turbine_id) FROM ${catalog}.gold.dim_turbine WHERE change_reason = 'RENOMBRE'"
+  - q: "Horas promedio de espera de repuestos en fallas mayores"
+    sql: "SELECT round(avg(waiting_hours), 1) FROM ${catalog}.gold.fact_maintenance_order WHERE severity = 'MAYOR'"
+  - q: "¿Cuántas horas de demora por ruta cortada por nieve hubo en 2025?"
+    sql: "SELECT round(sum(access_delay_h), 1) FROM ${catalog}.gold.fact_maintenance_order WHERE year(created_date) = 2025"
+  - q: "¿Qué cuadrilla atendió más órdenes?"
+    sql: "SELECT c.crew_id, count(*) AS ordenes FROM ${catalog}.gold.fact_maintenance_order o JOIN ${catalog}.gold.dim_crew c USING (crew_key) WHERE c.crew_id <> 'N/D' GROUP BY c.crew_id ORDER BY ordenes DESC LIMIT 1"
+  - q: "¿Cuántas órdenes están abiertas?"
+    sql: "SELECT count(*) FROM ${catalog}.gold.fact_maintenance_order WHERE is_open"
+  - q: "Disponibilidad contractual promedio de la flota eólica en 2025"
+    sql: "SELECT round(1 - sum(chargeable_fault_h) / sum(useful_h), 4) FROM ${catalog}.gold.mart_warranty_claims WHERE year(month_start) = 2025"
