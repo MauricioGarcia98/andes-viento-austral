@@ -16,6 +16,8 @@ Nunca edites el JSON a mano ni cambies el agent sólo desde la UI: lo que no est
 3. **¿Tiene una respuesta certificada?** Función de UC en `sql/semantic/02_functions.sql` (parámetros con
    `DEFAULT NULL`, aceptar código o nombre de parque; **nunca parámetros `DATE`**: Genie rechaza el agent entero,
    usar `STRING 'yyyy-MM-dd'` y `to_date()` adentro) y agregarla a `functions:` del YAML.
+   Sumala sólo al agent cuyas preguntas encajan con sus parámetros: Genie prefiere una función certificada
+   aunque no sirva (R16 de la bitácora).
 4. **¿Es un patrón de SQL difícil?** Un `examples:` con la pregunta como la diría el usuario.
 5. Recién al final, una línea más en `instructions:` (cortas: Genie las sigue mejor).
 

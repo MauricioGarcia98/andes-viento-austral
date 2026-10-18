@@ -257,6 +257,19 @@ y del sensor de suciedad sin intervención.
   bueno un mart mensual.
 </details>
 
+<details open>
+<summary><b>R16 · Genie prefiere una función certificada aunque no sirva para la pregunta</b></summary>
+
+- **Qué pasó:** en Finanzas, "desvío de **toda la empresa** en 2025" terminaba en `fn_explicar_desvio('TOTAL EMPRESA', '2025-01')`:
+  0 filas. La función es para un parque y un mes. Ni una instrucción ("es para UN parque y UN mes") ni 5 ejemplos SQL
+  nuevos lo corrigieron: en 3 rondas siguió eligiendo la función.
+- **Arreglo:** sacar `fn_explicar_desvio` del agent de Finanzas (sus preguntas son agregadas). Queda en Operación,
+  donde sí se pregunta por un parque y un mes.
+- **Lección:** una función certificada es una "respuesta oficial" y Genie la busca con ganas. Dásela sólo al agent cuyas
+  preguntas encajan con sus parámetros. Y medí siempre: entre rondas sin cambios en un agent, Genie cambió 1 o 2
+  respuestas por agent (no es determinístico), por eso los benchmarks se corren completos.
+</details>
+
 ## Tiempos reales por tarea
 
 Corrida #3 en dev (`run_id 486286601686508`, `scale_factor = 0.1`, serverless de Free Edition): **12/12 SUCCESS**.
