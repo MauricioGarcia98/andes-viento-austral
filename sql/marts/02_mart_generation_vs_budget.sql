@@ -59,19 +59,29 @@ budget AS (
     FROM ${silver}.generation_budget
     GROUP BY ALL
 ),
-j AS (
+last_data AS (SELECT max(reading_date) AS d FROM ${gold}.fact_turbine_10min),
+j0 AS (
     SELECT a.*,
            -- huecos de comunicación: se estiman con el promedio del mes (la factura usa el medidor SMEC)
            greatest(a.expected_readings - a.readings, 0) * a.generated_mwh / a.readings AS data_gap_mwh,
            greatest(a.expected_readings - a.readings, 0) * a.potential_mwh / a.readings AS data_gap_potential_mwh,
-           -- mes en curso (el job diario trae día a día): el presupuesto se prorratea por los días con datos
-           a.days_with_data < day(last_day(a.month_start))                          AS is_month_to_date,
-           b.budget_p50_mwh * least(1, a.days_with_data / day(last_day(a.month_start)))     AS budget_p50_mwh,
-           b.budget_p90_mwh * least(1, a.days_with_data / day(last_day(a.month_start)))     AS budget_p90_mwh,
-           b.reforecast_p50_mwh * least(1, a.days_with_data / day(last_day(a.month_start))) AS reforecast_p50_mwh,
+           -- mes en curso (el job diario trae día a día): el presupuesto se prorratea por los días transcurridos
+           -- hasta el último dato de la empresa. Un parque sin datos un día (VSAT caído) NO abre el mes.
+           a.month_start = trunc(ld.d, 'MM') AND ld.d < last_day(a.month_start)                  AS is_month_to_date,
+           CASE WHEN a.month_start = trunc(ld.d, 'MM') THEN day(ld.d) / day(last_day(a.month_start)) ELSE 1 END
+                                                                                                 AS budget_factor,
+           b.budget_p50_mwh, b.budget_p90_mwh, b.reforecast_p50_mwh,
            b.assumed_availability, b.assumed_curtailment
     FROM actual a
+    CROSS JOIN last_data ld
     LEFT JOIN budget b USING (park_code, month_start)
+),
+j AS (
+    SELECT * EXCEPT (budget_p50_mwh, budget_p90_mwh, reforecast_p50_mwh),
+           budget_p50_mwh * budget_factor     AS budget_p50_mwh,
+           budget_p90_mwh * budget_factor     AS budget_p90_mwh,
+           reforecast_p50_mwh * budget_factor AS reforecast_p50_mwh
+    FROM j0
 )
 SELECT
     j.park_code,
