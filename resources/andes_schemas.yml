@@ -1,0 +1,10 @@
+# El catálogo NO se declara acá: con Default Storage (Free Edition) la API falla con
+# "Metastore storage root URL does not exist". Se crea una vez por SQL (ver databricks.yml).
+# Las capas medallion las crea el notebook 00_setup; el bundle sólo declara el esquema del
+# pipeline declarativo para garantizar que exista ANTES de crear el pipeline.
+resources:
+  schemas:
+    ldp:
+      catalog_name: ${var.catalog}
+      name: ldp
+      comment: Versión declarativa (Lakeflow Declarative Pipelines) del pipeline, para comparar estilos
