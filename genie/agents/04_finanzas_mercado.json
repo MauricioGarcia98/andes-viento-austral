@@ -76,7 +76,12 @@
             "- Para baterías usá fn_ranking_baterias(meses): repago simple = CAPEX / valor anual recuperado.\n",
             "- Para explicar un desvío de un parque en un mes usá fn_explicar_desvio(parque, 'yyyy-MM').\n",
             "- \"Este año\" = el año del último mes con datos de mart_generation_vs_budget. Nunca uses current_date().\n",
-            "- Inflación: los costos en pesos suben mes a mes; compará en USD para ver costo real."
+            "- Inflación: los costos en pesos suben mes a mes; compará en USD para ver costo real.\n",
+            "- Capex de baterías: usá fn_ranking_baterias (una fila por parque y opción). mart_curtailment_battery es mensual:\n",
+            "  sumar battery_capex_usd ahí multiplica la inversión por la cantidad de meses.\n",
+            "- Repago = simple_payback_years (años). ranking es sólo la posición.\n",
+            "- El curtailment que asume el presupuesto es un porcentaje: mart_generation_vs_budget.assumed_curtailment (0,04 = 4 %).\n",
+            "- En las funciones, para \"todos los parques\" pasá NULL (sin comillas), nunca el texto 'NULL'."
           ]
         }
       ],
@@ -328,6 +333,20 @@
           ]
         },
         {
+          "id": "afb492928f63c869aedf980c98632885",
+          "question": [
+            "¿Qué porcentaje de curtailment asumía el presupuesto 2025 para la Patagonia?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT DISTINCT assumed_curtailment FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2025 AND region = 'PATAGONIA'"
+              ]
+            }
+          ]
+        },
+        {
           "id": "b8eb111cedbc6df855fb208136d10793",
           "question": [
             "¿Qué parque y tamaño de batería tiene el mejor repago?"
@@ -379,20 +398,6 @@
               "format": "SQL",
               "content": [
                 "SELECT park_code, round(sum(lost_curtailment_mwh), 1) AS mwh FROM ${catalog}.gold.fact_curtailment_hourly WHERE year(reading_date) = 2025 GROUP BY park_code ORDER BY mwh DESC LIMIT 1"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "de5cb6c51818358580439f02c29a5b6c",
-          "question": [
-            "¿Cuánto curtailment asumía el presupuesto 2025 para la Patagonia?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT DISTINCT assumed_curtailment FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2025 AND region = 'PATAGONIA'"
               ]
             }
           ]

@@ -80,7 +80,11 @@
             "- Falla mayor = order_type 'CORRECTIVA' y severity 'MAYOR' (multiplicadora, rodamiento principal, rodamiento del generador).\n",
             "- MTTR = promedio de downtime_hours de correctivas. Costos siempre en USD (total_cost_usd), salvo que pidan pesos.\n",
             "- Disponibilidad contractual (garantía): usar mart_warranty_claims.availability_12m o la metric view mv_disponibilidad.\n",
-            "  La garantía es 97 %; las horas de ruta cortada por nieve son fuerza mayor y no cuentan."
+            "  La garantía es 97 %; las horas de ruta cortada por nieve son fuerza mayor y no cuentan.\n",
+            "- Disponibilidad de la flota o de un año = MEASURE(`Disponibilidad contractual`) sin agrupar por parque. Nunca dividas ni promedies una MEASURE.\n",
+            "- \"Horas de falla\" sin más = fact_availability_daily.fault_h (todas). \"Imputables\" (chargeable_fault_h) sólo para garantía.\n",
+            "- dim_turbine tiene una fila 'desconocida' con turbine_key = -1: excluila al contar turbinas.\n",
+            "- En las funciones, para \"todos los parques\" pasá NULL (sin comillas), nunca el texto 'NULL'."
           ]
         }
       ],

@@ -29,6 +29,10 @@ instructions: |
   - MTTR = promedio de downtime_hours de correctivas. Costos siempre en USD (total_cost_usd), salvo que pidan pesos.
   - Disponibilidad contractual (garantía): usar mart_warranty_claims.availability_12m o la metric view mv_disponibilidad.
     La garantía es 97 %; las horas de ruta cortada por nieve son fuerza mayor y no cuentan.
+  - Disponibilidad de la flota o de un año = MEASURE(`Disponibilidad contractual`) sin agrupar por parque. Nunca dividas ni promedies una MEASURE.
+  - "Horas de falla" sin más = fact_availability_daily.fault_h (todas). "Imputables" (chargeable_fault_h) sólo para garantía.
+  - dim_turbine tiene una fila 'desconocida' con turbine_key = -1: excluila al contar turbinas.
+  - En las funciones, para "todos los parques" pasá NULL (sin comillas), nunca el texto 'NULL'.
 sample_questions:
   - "¿Qué turbinas tienen riesgo alto de falla hoy?"
   - "¿Cuánto tardamos en promedio en reparar una multiplicadora en Santa Cruz?"

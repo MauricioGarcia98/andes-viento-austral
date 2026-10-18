@@ -140,6 +140,8 @@ ALTER TABLE ${gold}.mart_panel_cleaning ALTER COLUMN soiling_loss_pct COMMENT 'P
 ALTER TABLE ${gold}.mart_panel_cleaning ALTER COLUMN lost_usd_since_cleaning COMMENT 'USD perdidos por suciedad desde la última limpieza.';
 ALTER TABLE ${gold}.mart_panel_cleaning ALTER COLUMN cleaning_cost_usd COMMENT 'Costo de la última limpieza (agua + cuadrilla), USD.';
 ALTER TABLE ${gold}.mart_panel_cleaning ALTER COLUMN recommendation COMMENT 'LIMPIAR cuando lo perdido supera el costo de limpiar y no se pronostica lluvia.';
+ALTER TABLE ${gold}.mart_panel_cleaning ALTER COLUMN is_cleaning_day COMMENT 'true en cada día en que la cuadrilla está limpiando (una limpieza dura varios días).';
+ALTER TABLE ${gold}.mart_panel_cleaning ALTER COLUMN is_cleaning_end COMMENT 'true el día en que termina una limpieza: contar estos días = cantidad de limpiezas.';
 COMMENT ON TABLE ${gold}.mart_ppa_forecast IS 'Proyección diaria de cumplimiento de cada PPA en el mes y recomendación: EN_CAMINO, COMPRAR_SPOT o PAGAR_PENALIDAD. Grano: 1 fila por contrato y fecha de corte.';
 ALTER TABLE ${gold}.mart_ppa_forecast ALTER COLUMN as_of_date COMMENT 'Fecha de corte de la proyección. Para \'este mes\' usar la máxima.';
 ALTER TABLE ${gold}.mart_ppa_forecast ALTER COLUMN projected_compliance_pct COMMENT 'Cumplimiento proyectado al cierre del mes.';

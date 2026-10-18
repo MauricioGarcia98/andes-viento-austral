@@ -67,7 +67,10 @@
             "- Ante un faltante, compará penalty_cost_usd (pagar la penalidad) con spot_cover_cost_usd (comprar en el spot);\n",
             "  best_option ya dice cuál conviene. Montos en USD sin decimales.\n",
             "- Para contratos usá dim_contract con is_current = true salvo que pregunten por la historia (adendas, cambios de precio).\n",
-            "- Datos de contacto y precios son confidenciales: si salen enmascarados es por permisos, no es un error."
+            "- Datos de contacto y precios son confidenciales: si salen enmascarados es por permisos, no es un error.\n",
+            "- Volumen comprometido de la cartera: sumá dim_contract.committed_mwh_month (is_current, status 'VIGENTE', contract_key <> -1).\n",
+            "  No lo sumes desde v_contract_park_month: ahí cada contrato aparece una vez por parque de origen.\n",
+            "- \"Penalidades\" en montos = best_option_cost_usd de fact_ppa_settlement (USD), no cantidad de meses."
           ]
         }
       ],
@@ -287,15 +290,15 @@
           ]
         },
         {
-          "id": "83f76d457401c1dd1139d86bcc2c9ede",
+          "id": "6fb3c71111f55e7a69e511c480063ed4",
           "question": [
-            "¿Cuál fue el mes con más penalidades (mejor opción) en toda la historia?"
+            "¿Cuántos MWh/mes subió el volumen comprometido del data center con la adenda de 2024 (diferencia)?"
           ],
           "answer": [
             {
               "format": "SQL",
               "content": [
-                "SELECT year_month, round(sum(best_option_cost_usd), 0) AS usd FROM ${catalog}.gold.fact_ppa_settlement GROUP BY year_month ORDER BY usd DESC LIMIT 1"
+                "SELECT max(committed_mwh_month) - min(committed_mwh_month) FROM ${catalog}.gold.dim_contract WHERE contract_id = 'PPA-2023-007'"
               ]
             }
           ]
@@ -315,15 +318,15 @@
           ]
         },
         {
-          "id": "d9301fb7ded72f85576d3b005465b9a3",
+          "id": "b7b232732fd2e9790e070e1330478efe",
           "question": [
-            "¿Cuánto subió el volumen comprometido del data center con la adenda de 2024?"
+            "¿Cuál fue el mes con mayor costo en USD de faltantes (mejor opción) en toda la historia?"
           ],
           "answer": [
             {
               "format": "SQL",
               "content": [
-                "SELECT max(committed_mwh_month) - min(committed_mwh_month) FROM ${catalog}.gold.dim_contract WHERE contract_id = 'PPA-2023-007'"
+                "SELECT year_month, round(sum(best_option_cost_usd), 0) AS usd FROM ${catalog}.gold.fact_ppa_settlement GROUP BY year_month ORDER BY usd DESC LIMIT 1"
               ]
             }
           ]

@@ -104,6 +104,7 @@ SELECT
     last_cleaning_water_m3                                   AS cleaning_water_m3,
     round(last_cleaning_cost_usd / nullif(lost_usd_per_day_7d, 0), 1) AS breakeven_days,
     is_cleaning_day,
+    clean_end_date IS NOT NULL                               AS is_cleaning_end,
     weather_condition,
     precip_mm,
     rain_forecast_tomorrow_mm,

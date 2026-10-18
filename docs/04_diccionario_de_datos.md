@@ -338,6 +338,8 @@ Suciedad estimada de los paneles, pérdida acumulada en USD desde la última lim
 | `lost_usd_since_cleaning` | USD perdidos por suciedad desde la última limpieza. |  |
 | `cleaning_cost_usd` | Costo de la última limpieza (agua + cuadrilla), USD. |  |
 | `recommendation` | LIMPIAR cuando lo perdido supera el costo de limpiar y no se pronostica lluvia. |  |
+| `is_cleaning_day` | true en cada día en que la cuadrilla está limpiando (una limpieza dura varios días). |  |
+| `is_cleaning_end` | true el día en que termina una limpieza: contar estos días = cantidad de limpiezas. |  |
 
 ## mart_ppa_forecast
 

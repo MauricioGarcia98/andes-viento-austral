@@ -248,8 +248,14 @@ AS $$
 version: 1.1
 comment: "Salud diaria por turbina"
 source: ${gold}.mart_turbine_health
+joins:
+  - name: park
+    source: ${gold}.dim_park
+    on: source.park_code = park.park_code
 dimensions:
   - name: Parque
+    expr: park.park_name
+  - name: Código de parque
     expr: park_code
   - name: Turbina
     expr: turbine_id
@@ -278,8 +284,14 @@ AS $$
 version: 1.1
 comment: "Suciedad y limpieza de paneles por parque solar y día"
 source: ${gold}.mart_panel_cleaning
+joins:
+  - name: park
+    source: ${gold}.dim_park
+    on: source.park_code = park.park_code
 dimensions:
   - name: Parque
+    expr: park.park_name
+  - name: Código de parque
     expr: park_code
   - name: Fecha
     expr: reading_date
@@ -296,4 +308,9 @@ measures:
     expr: AVG(soiling_loss_pct)
   - name: Días recomendados para limpiar
     expr: COUNT_IF(recommendation = 'LIMPIAR')
+  - name: Limpiezas realizadas
+    expr: COUNT_IF(is_cleaning_end)
+    synonyms: ["cantidad de limpiezas", "lavados de paneles"]
+  - name: Días de limpieza
+    expr: COUNT_IF(is_cleaning_day)
 $$;

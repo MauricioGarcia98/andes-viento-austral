@@ -23,6 +23,9 @@ instructions: |
     best_option ya dice cuál conviene. Montos en USD sin decimales.
   - Para contratos usá dim_contract con is_current = true salvo que pregunten por la historia (adendas, cambios de precio).
   - Datos de contacto y precios son confidenciales: si salen enmascarados es por permisos, no es un error.
+  - Volumen comprometido de la cartera: sumá dim_contract.committed_mwh_month (is_current, status 'VIGENTE', contract_key <> -1).
+    No lo sumes desde v_contract_park_month: ahí cada contrato aparece una vez por parque de origen.
+  - "Penalidades" en montos = best_option_cost_usd de fact_ppa_settlement (USD), no cantidad de meses.
 sample_questions:
   - "¿Vamos a llegar al volumen comprometido este mes con cada cliente?"
   - "¿Qué contrato tuvo más penalidades en 2025?"
@@ -73,7 +76,7 @@ benchmarks:
     sql: "SELECT source_parks FROM ${catalog}.gold.dim_contract WHERE contract_id = 'PPA-2023-007' AND is_current"
   - q: "¿Cuántas versiones tiene el contrato PPA-2023-007?"
     sql: "SELECT count(*) FROM ${catalog}.gold.dim_contract WHERE contract_id = 'PPA-2023-007'"
-  - q: "¿Cuánto subió el volumen comprometido del data center con la adenda de 2024?"
+  - q: "¿Cuántos MWh/mes subió el volumen comprometido del data center con la adenda de 2024 (diferencia)?"
     sql: "SELECT max(committed_mwh_month) - min(committed_mwh_month) FROM ${catalog}.gold.dim_contract WHERE contract_id = 'PPA-2023-007'"
   - q: "Precio actual del contrato de Aluminios Patagónicos"
     sql: "SELECT price_usd_mwh FROM ${catalog}.gold.dim_contract WHERE contract_id = 'PPA-2018-001' AND is_current"
@@ -85,7 +88,7 @@ benchmarks:
     sql: "SELECT count(*) FROM ${catalog}.gold.fn_proyeccion_ppa(NULL) WHERE projected_shortfall_mwh > 0"
   - q: "Cumplimiento proyectado de la papelera este mes"
     sql: "SELECT projected_compliance_pct FROM ${catalog}.gold.fn_proyeccion_ppa('papelera')"
-  - q: "¿Cuál fue el mes con más penalidades (mejor opción) en toda la historia?"
+  - q: "¿Cuál fue el mes con mayor costo en USD de faltantes (mejor opción) en toda la historia?"
     sql: "SELECT year_month, round(sum(best_option_cost_usd), 0) AS usd FROM ${catalog}.gold.fact_ppa_settlement GROUP BY year_month ORDER BY usd DESC LIMIT 1"
   - q: "Volumen comprometido total mensual de la cartera vigente"
     sql: "SELECT round(sum(committed_mwh_month), 1) FROM ${catalog}.gold.dim_contract WHERE is_current AND NOT is_deleted AND contract_key <> -1 AND status = 'VIGENTE'"

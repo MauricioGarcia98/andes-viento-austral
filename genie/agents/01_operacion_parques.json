@@ -75,7 +75,12 @@
             "- Energía siempre en MWh con 1 decimal; porcentajes con 1 decimal. Curtailment = recorte = limitación de red = orden de CAMMESA.\n",
             "- Para \"¿por qué generó menos?\" usá la función fn_explicar_desvio(parque, 'yyyy-MM'): es la cascada oficial.\n",
             "- Para \"¿hay que limpiar?\" usá fn_recomendacion_limpieza. Las pérdidas por suciedad sólo existen en parques solares.\n",
-            "- Las fechas son días operativos locales (UTC-3). No mezcles parques eólicos y solares en factores de capacidad."
+            "- Las fechas son días operativos locales (UTC-3). No mezcles parques eólicos y solares en factores de capacidad.\n",
+            "- El desvío % de un parque en un mes es mart_generation_vs_budget.variance_pct (o la fila 9 de fn_explicar_desvio).\n",
+            "- \"Días de nevada / hielo / tormenta\" = dim_weather.weather_condition ('Nevada', 'Hielo', ...), no la columna snow_cm.\n",
+            "- Limpiezas realizadas = mart_panel_cleaning.is_cleaning_end (un día por limpieza); is_cleaning_day marca todos los días de trabajo.\n",
+            "- Un desvío \"en 2025\" o \"en el año\" es el acumulado anual: sum(actual_mwh) / sum(budget_p50_mwh) - 1.\n",
+            "- En las funciones, para \"todos los parques\" pasá NULL (sin comillas), nunca el texto 'NULL'."
           ]
         }
       ],
@@ -195,20 +200,6 @@
           ]
         },
         {
-          "id": "165724239da2582c13754da18f36f6e6",
-          "question": [
-            "¿Qué parque tuvo el peor desvío contra presupuesto en 2025?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT park_name, round(sum(actual_mwh) / sum(budget_p50_mwh) - 1, 4) AS desvio FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2025 GROUP BY park_name ORDER BY desvio LIMIT 1"
-              ]
-            }
-          ]
-        },
-        {
           "id": "3679184dd7480de717693bda22be1923",
           "question": [
             "¿Cuántos MWh se perdieron por hielo en julio 2025 en Cañadón León?"
@@ -251,20 +242,6 @@
           ]
         },
         {
-          "id": "6996bf902ccfce0613592f4bb87d0ecf",
-          "question": [
-            "¿Cuántos días hubo nevada en Cañadón León en 2025?"
-          ],
-          "answer": [
-            {
-              "format": "SQL",
-              "content": [
-                "SELECT count(*) FROM ${catalog}.gold.dim_weather WHERE park_code = 'LEO' AND year(date) = 2025 AND weather_condition = 'Nevada'"
-              ]
-            }
-          ]
-        },
-        {
           "id": "74a43d48f5eccf86d7716917507dc491",
           "question": [
             "Factor de capacidad de Pico Truncado Alto en 2025"
@@ -288,6 +265,34 @@
               "format": "SQL",
               "content": [
                 "SELECT reading_date, round(generated_mwh, 1) AS mwh FROM ${catalog}.gold.v_park_daily WHERE park_code = 'RAW' AND reading_date > (SELECT max(reading_date) - 7 FROM ${catalog}.gold.v_park_daily) ORDER BY reading_date"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "7e9635ae566e22b16104d7c1f9c593b0",
+          "question": [
+            "¿Qué parque tuvo el peor desvío contra presupuesto en el acumulado de 2025?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT park_name, round(sum(actual_mwh) / sum(budget_p50_mwh) - 1, 4) AS desvio FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2025 GROUP BY park_name ORDER BY desvio LIMIT 1"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "8a049c1d92df61b7ff759388390fb595",
+          "question": [
+            "¿Cuántos días con condición 'Nevada' tuvo Cañadón León en 2025?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT count(*) FROM ${catalog}.gold.dim_weather WHERE park_code = 'LEO' AND year(date) = 2025 AND weather_condition = 'Nevada'"
               ]
             }
           ]
@@ -371,7 +376,7 @@
             {
               "format": "SQL",
               "content": [
-                "SELECT park_code, count(*) FROM ${catalog}.gold.dim_weather WHERE weather_condition = 'Hielo' AND date BETWEEN '2025-06-01' AND '2025-08-31' GROUP BY park_code"
+                "SELECT p.park_name, count(*) AS dias FROM ${catalog}.gold.dim_weather w JOIN ${catalog}.gold.dim_park p USING (park_code) WHERE w.weather_condition = 'Hielo' AND w.date BETWEEN '2025-06-01' AND '2025-08-31' GROUP BY p.park_name"
               ]
             }
           ]
@@ -469,7 +474,7 @@
             {
               "format": "SQL",
               "content": [
-                "SELECT park_code, count(DISTINCT last_cleaning_date) AS limpiezas FROM ${catalog}.gold.mart_panel_cleaning WHERE year(last_cleaning_date) = 2025 GROUP BY park_code"
+                "SELECT park_code, count_if(is_cleaning_end) AS limpiezas FROM ${catalog}.gold.mart_panel_cleaning WHERE year(reading_date) = 2025 GROUP BY park_code ORDER BY park_code"
               ]
             }
           ]

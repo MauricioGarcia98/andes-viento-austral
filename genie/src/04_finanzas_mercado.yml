@@ -28,6 +28,11 @@ instructions: |
   - Para explicar un desvío de un parque en un mes usá fn_explicar_desvio(parque, 'yyyy-MM').
   - "Este año" = el año del último mes con datos de mart_generation_vs_budget. Nunca uses current_date().
   - Inflación: los costos en pesos suben mes a mes; compará en USD para ver costo real.
+  - Capex de baterías: usá fn_ranking_baterias (una fila por parque y opción). mart_curtailment_battery es mensual:
+    sumar battery_capex_usd ahí multiplica la inversión por la cantidad de meses.
+  - Repago = simple_payback_years (años). ranking es sólo la posición.
+  - El curtailment que asume el presupuesto es un porcentaje: mart_generation_vs_budget.assumed_curtailment (0,04 = 4 %).
+  - En las funciones, para "todos los parques" pasá NULL (sin comillas), nunca el texto 'NULL'.
 sample_questions:
   - "¿Cuántos MWh y USD perdimos por curtailment en 2025?"
   - "¿En qué parque conviene invertir en baterías?"
@@ -83,7 +88,7 @@ benchmarks:
     sql: "SELECT round(sum(variance_mwh), 1) FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2025"
   - q: "Desvío porcentual vs presupuesto de toda la empresa en 2024"
     sql: "SELECT round(sum(actual_mwh) / sum(budget_p50_mwh) - 1, 4) FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2024"
-  - q: "¿Cuánto curtailment asumía el presupuesto 2025 para la Patagonia?"
+  - q: "¿Qué porcentaje de curtailment asumía el presupuesto 2025 para la Patagonia?"
     sql: "SELECT DISTINCT assumed_curtailment FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2025 AND region = 'PATAGONIA'"
   - q: "¿Cuánto costó la mano de obra de mantenimiento en dólares en 2024?"
     sql: "SELECT round(sum(labor_cost_usd), 0) FROM ${catalog}.gold.fact_maintenance_order WHERE year(created_date) = 2024"

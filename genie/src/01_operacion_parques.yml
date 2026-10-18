@@ -27,6 +27,11 @@ instructions: |
   - Para "¿por qué generó menos?" usá la función fn_explicar_desvio(parque, 'yyyy-MM'): es la cascada oficial.
   - Para "¿hay que limpiar?" usá fn_recomendacion_limpieza. Las pérdidas por suciedad sólo existen en parques solares.
   - Las fechas son días operativos locales (UTC-3). No mezcles parques eólicos y solares en factores de capacidad.
+  - El desvío % de un parque en un mes es mart_generation_vs_budget.variance_pct (o la fila 9 de fn_explicar_desvio).
+  - "Días de nevada / hielo / tormenta" = dim_weather.weather_condition ('Nevada', 'Hielo', ...), no la columna snow_cm.
+  - Limpiezas realizadas = mart_panel_cleaning.is_cleaning_end (un día por limpieza); is_cleaning_day marca todos los días de trabajo.
+  - Un desvío "en 2025" o "en el año" es el acumulado anual: sum(actual_mwh) / sum(budget_p50_mwh) - 1.
+  - En las funciones, para "todos los parques" pasá NULL (sin comillas), nunca el texto 'NULL'.
 sample_questions:
   - "¿Cuánto generó cada parque el último mes contra el presupuesto?"
   - "¿Por qué Cañadón León generó menos en julio 2025?"
@@ -80,18 +85,18 @@ benchmarks:
     sql: "SELECT round(lost_curtailment_mwh, 1) FROM ${catalog}.gold.mart_generation_vs_budget WHERE park_code = 'LEO' AND year_month = '2025-07'"
   - q: "¿Cuántos MWh se perdieron por hielo en julio 2025 en Cañadón León?"
     sql: "SELECT round(lost_icing_mwh, 1) FROM ${catalog}.gold.mart_generation_vs_budget WHERE park_code = 'LEO' AND year_month = '2025-07'"
-  - q: "¿Qué parque tuvo el peor desvío contra presupuesto en 2025?"
+  - q: "¿Qué parque tuvo el peor desvío contra presupuesto en el acumulado de 2025?"
     sql: "SELECT park_name, round(sum(actual_mwh) / sum(budget_p50_mwh) - 1, 4) AS desvio FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2025 GROUP BY park_name ORDER BY desvio LIMIT 1"
   - q: "Factor de capacidad de Pico Truncado Alto en 2025"
     sql: "SELECT round(sum(generated_mwh) / sum(installed_mw * 24), 4) FROM ${catalog}.gold.v_park_daily WHERE park_code = 'PIC' AND year(reading_date) = 2025"
   - q: "¿En qué mes de 2025 la empresa generó más?"
     sql: "SELECT year_month, round(sum(generated_mwh), 1) AS mwh FROM ${catalog}.gold.v_park_daily WHERE year(reading_date) = 2025 GROUP BY year_month ORDER BY mwh DESC LIMIT 1"
-  - q: "¿Cuántos días hubo nevada en Cañadón León en 2025?"
+  - q: "¿Cuántos días con condición 'Nevada' tuvo Cañadón León en 2025?"
     sql: "SELECT count(*) FROM ${catalog}.gold.dim_weather WHERE park_code = 'LEO' AND year(date) = 2025 AND weather_condition = 'Nevada'"
   - q: "¿Cuál es la pérdida por suciedad de Susques Solar en 2025 en MWh?"
     sql: "SELECT round(sum(soiling_lost_mwh), 1) FROM ${catalog}.gold.mart_panel_cleaning WHERE park_code = 'SUS' AND year(reading_date) = 2025"
   - q: "¿Cuántas limpiezas de paneles se hicieron en 2025 por parque?"
-    sql: "SELECT park_code, count(DISTINCT last_cleaning_date) AS limpiezas FROM ${catalog}.gold.mart_panel_cleaning WHERE year(last_cleaning_date) = 2025 GROUP BY park_code"
+    sql: "SELECT park_code, count_if(is_cleaning_end) AS limpiezas FROM ${catalog}.gold.mart_panel_cleaning WHERE year(reading_date) = 2025 GROUP BY park_code ORDER BY park_code"
   - q: "¿Qué parques solares hay que limpiar según el último día?"
     sql: "SELECT park_name, recommendation FROM ${catalog}.gold.fn_recomendacion_limpieza(NULL) WHERE recommendation = 'LIMPIAR'"
   - q: "Suciedad media de los paneles de Abra Pampa en septiembre 2025"
@@ -105,6 +110,6 @@ benchmarks:
   - q: "¿Cuál fue el viento medio de Garayalde en julio 2025?"
     sql: "SELECT round(avg(avg_wind_ms), 2) FROM ${catalog}.gold.v_park_daily WHERE park_code = 'GAR' AND year_month = '2025-07'"
   - q: "¿Cuántos días con condición 'Hielo' tuvo cada parque eólico en invierno 2025?"
-    sql: "SELECT park_code, count(*) FROM ${catalog}.gold.dim_weather WHERE weather_condition = 'Hielo' AND date BETWEEN '2025-06-01' AND '2025-08-31' GROUP BY park_code"
+    sql: "SELECT p.park_name, count(*) AS dias FROM ${catalog}.gold.dim_weather w JOIN ${catalog}.gold.dim_park p USING (park_code) WHERE w.weather_condition = 'Hielo' AND w.date BETWEEN '2025-06-01' AND '2025-08-31' GROUP BY p.park_name"
   - q: "Disponibilidad contractual promedio de Bahía Deseado en 2025"
     sql: "SELECT round(avg(availability_contractual), 4) FROM ${catalog}.gold.v_park_daily WHERE park_code = 'DES' AND year(reading_date) = 2025"

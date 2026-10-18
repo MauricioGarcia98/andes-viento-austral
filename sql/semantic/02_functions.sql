@@ -35,7 +35,9 @@ CREATE OR REPLACE FUNCTION ${gold}.fn_ranking_baterias(
     p_meses INT DEFAULT 12 COMMENT 'Cantidad de meses hacia atrás para valorizar (default 12)')
 RETURNS TABLE (park_name STRING, option_code STRING, battery_mw DOUBLE, battery_mwh DOUBLE,
                curtailed_mwh DOUBLE, recovered_mwh DOUBLE, recovered_value_usd DOUBLE,
-               battery_capex_usd DOUBLE, simple_payback_years DOUBLE, ranking INT)
+               battery_capex_usd DOUBLE COMMENT 'Inversión de UNA batería de esa opción en ese parque (USD)',
+               simple_payback_years DOUBLE COMMENT 'Repago simple en años = capex / valor recuperado por año',
+               ranking INT COMMENT 'Posición en el ranking (1 = mejor repago); no es una cantidad de años')
 COMMENT 'Caso de inversión en baterías: valor recuperable del curtailment y repago simple por parque y tamaño'
 RETURN
     WITH last_m AS (SELECT max(month_start) AS m FROM ${gold}.mart_curtailment_battery),
@@ -113,7 +115,7 @@ CREATE OR REPLACE FUNCTION ${gold}.fn_explicar_desvio(
     p_parque STRING COMMENT 'Código o nombre del parque',
     p_mes STRING COMMENT 'Mes en formato yyyy-MM (ej. 2025-07)')
 RETURNS TABLE (orden INT, concepto STRING, mwh DOUBLE, pct_del_presupuesto DOUBLE)
-COMMENT 'Cascada del desvío real vs. presupuesto de un parque en un mes: presupuesto, efecto del recurso, curtailment, fallas, mantenimiento, hielo, suciedad, otras y real'
+COMMENT 'Cascada del desvío real vs. presupuesto de un parque en un mes: presupuesto, efecto del recurso, curtailment, fallas, mantenimiento, hielo, suciedad, otras, real y desvío total (fila 9: pct_del_presupuesto es el desvío %)'
 RETURN
     WITH m AS (
         SELECT * FROM ${gold}.mart_generation_vs_budget
@@ -130,5 +132,6 @@ RETURN
         UNION ALL SELECT 6, 'Suciedad de paneles', -lost_soiling_mwh, budget_p50_mwh FROM m
         UNION ALL SELECT 7, 'Otras (performance y huecos de dato)', -lost_other_mwh, budget_p50_mwh FROM m
         UNION ALL SELECT 8, 'Generación real', actual_mwh, budget_p50_mwh FROM m
+        UNION ALL SELECT 9, 'Desvío total vs. presupuesto', actual_mwh - budget_p50_mwh, budget_p50_mwh FROM m
     )
     SELECT orden, concepto, round(mwh, 1), round(mwh / base, 4) FROM rows ORDER BY orden;

@@ -67,6 +67,8 @@ def values_match(expected: list[list], got: list[list]) -> bool:
             # Genie puede devolver el % como 18.4 en vez de 0.184: se aceptan las dos escalas
             if not any(abs(g - k) <= max(abs(k) * 0.01, 0.051) for g in got_nums for k in (n, n * 100, n / 100)):
                 return False
+        elif _norm(v) in ("true", "false"):
+            continue  # Genie etiqueta los booleanos a su manera ("Con curtailment"): se comparan los números
         elif _norm(v) not in got_txt:
             return False
     return True
