@@ -39,6 +39,19 @@ targets:
     default: true
     variables:
       catalog: andes_viento_dev
+    # La App vive sólo en dev: el nombre de una App es único en el workspace (el modo development no le
+    # agrega prefijo) y Free Edition permite una sola. Error real: "An app with the same name already exists".
+    resources:
+      apps:
+        andes_genie_chat:
+          name: andes-genie-chat
+          description: Chat de las áreas de Andes Viento Austral con sus Genie Agents (Conversation API)
+          source_code_path: ./apps/genie_chat
+          resources:
+            - name: sql-warehouse
+              sql_warehouse:
+                id: ${var.warehouse_id}
+                permission: CAN_USE
 
   prod:
     mode: production
