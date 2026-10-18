@@ -258,6 +258,27 @@ silver_reference 125 s porque esta vez no hubo cola: es la diferencia entre corr
 Resultado: `v_park_daily` llega al 2026-10-01 en los 13 parques. Un día nuevo cuesta ~12 min contra ~43 de la carga
 completa; casi todo es costo fijo (arranque de serverless y gobierno), no volumen.
 
+**Pipeline LDP** (`andes-viento-ldp`, dev, update `5a8e6559`): **COMPLETED al primer intento en 3 min 14 s**
+(serverless). Expectations del SCADA sobre 7.259.550 lecturas:
+
+| expectation | acción | pasaron | fallaron |
+|---|---|---:|---:|
+| `turbina_informada` | DROP | 7.259.550 | 0 |
+| `fecha_parseable` | DROP | 7.259.550 | 0 |
+| `viento_posible` | WARN | 7.259.550 | 0 |
+| `potencia_en_rango` | WARN | 7.258.917 | **633** |
+| `temperatura_posible` | WARN | 7.257.384 | **2.166** |
+| `assets_clean.id_presente` | FAIL UPDATE | 119 | 0 |
+
+Las 633 + 2.166 son exactamente la suciedad "imposible" que inyecta el generador (picos de potencia por encima de 6 MW
+y temperaturas de multiplicadora ≥ 200 °C). En el camino PySpark esas mismas filas terminan con el valor en NULL (`null_impossible`).
+
+> **Ojo con la cuota de 500 tablas de Free Edition.** El pipeline crea 13 tablas propias **y 14 tablas internas**
+> `__materialization_mat_*` (más su `event_log`): ~27 por pipeline y por target. Con NovaMart + Andes dev + prod
+> llegamos al 80 % y Databricks mandó un mail de aviso. Lo que hicimos: borrar catálogos de proyectos viejos
+> (de ~300 tablas propias a 154). Si aprieta: borrar el target prod (`andes_viento`) o el schema LDP de dev cuando
+> no se use (`DROP SCHEMA andes_viento_dev.dev_<usuario>_ldp CASCADE` o `databricks bundle destroy` del pipeline).
+
 ## Cómo reparar sin correr todo de nuevo
 
 ```bash
