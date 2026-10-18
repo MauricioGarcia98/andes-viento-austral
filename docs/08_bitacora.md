@@ -1,0 +1,380 @@
+# 08 · Bitácora: los errores reales, explicados en criollo
+
+> Todo lo que salió mal construyendo y desplegando Andes Viento Austral, en orden, con el mensaje real, por qué pasó,
+> cómo se arregló y qué aprendimos. Workspace: **Databricks Free Edition**, compute serverless, CLI v1.21,
+> `scale_factor = 0.1`. Los errores de NovaMart ya estaban aplicados desde el día 1 (ver más abajo).
+
+## Cómo leer esta bitácora
+
+Cada error tiene el mismo formato: **qué pasó** (con el mensaje real), **cómo lo encontramos**, **el arreglo** y **la
+lección**. Los `L` aparecieron en la prueba local (antes de tocar Databricks); los `R`, en el workspace real. Para
+la historia completa en orden, ver [17 · Cómo se construyó](17_como_se_construyo.md); para cómo se detecta cada tipo
+de error, [18 · Pruebas](18_pruebas.md).
+
+| # | error |
+|---|---|
+| L1 | pip install pyspark falla con AttributeError: install_layout |
+| L2 | module 'pyspark.sql.functions' has no attribute 'try_cast' (y try_to_date) |
+| L3 | INVALID_EXTRACT_BASE_FIELD_TYPE ... Can't extract a value from "p" |
+| L4 | does not support REPLACE TABLE AS SELECT (Spark local) |
+| L5 | [INVALID_IDENTIFIER] The unquoted identifier pd-gearbox_c is invalid |
+| L6 | Quality gate: toda medición tiene turbina (FK a dim_turbine): 540 |
+| L7 | Calibración de negocio: todos los PPA "CUMPLEN" siempre |
+| L8 | Test de integración: la foto inicial del CMMS salía con el firmware viejo |
+| R1 | There are already 5 active runs (limit: 5) |
+| R2 | gold_marts: [INVALID_IDENTIFIER] ... pd-gearbox_c |
+| R3 | Regenerar los archivos no sirve: Auto Loader no los vuelve a leer |
+| R4 | governance: [PARSE_SYNTAX_ERROR] Syntax error at or near ''' |
+| R5 | Metric views: Can't extract a value from "parque.park_name"... got "STRING" |
+| R6 | [CROSS_CATALOG_SCHEMA_REFERENCE_NOT_SUPPORTED] ... andes_viento_dev.gold |
+| R7 | Quality gate: disponibilidad contractual entre 0 y 1 (1) |
+| R8 | Genie API: Invalid export proto: instructions.example_question_sqls must be sorted by id |
+| R9 | bundle deploy -t prod: An app with the same name already exists |
+| R10 | Calibración con datos reales: la flota era "demasiado sana" |
+| R11 | Genie: INVALID_CERTIFIED_ANSWER_FUNCTION_EXCEPTION ... argument type is not supported: date |
+| R12 | Genie pasa 'NULL' como texto a una función confiable → 0 filas |
+| R13 | El job diario "deshizo" los arreglos: Finanzas pasó de 17/21 a 0/21 |
+| R14 | "Llegaste al 85 % de 500 tablas" con sólo ~180 tablas vivas |
+| R15 | El mes en curso aparecía como un faltante de USD 1,4 M |
+| R16 | Genie prefiere una función certificada aunque no sirva para la pregunta |
+
+## Lo que trajimos aprendido de NovaMart (y por eso NO pasó)
+
+| error en NovaMart | cómo lo evitamos acá |
+|---|---|
+| `The dependency on an if/else condition ... does not specify an outcome` | `outcome: "true"` / `"false"` en todas las dependencias de `should_generate` |
+| `Catalog 'novamart_dev' does not exist` / `Metastore storage root URL does not exist` | catálogo creado por SQL antes del primer deploy (ADR-007) |
+| `CF_ADD_NEW_NOT_SUPPORTED` (`.schema()` + `addNewColumns` en CSV) | contrato por `cloudFiles.schemaHints` |
+| `UNKNOWN_FIELD_EXCEPTION` agotando los reintentos del job | reinicio del stream en `bronze.py` (los reintentos quedan para infraestructura) |
+
+Resultado: **el primer `bundle deploy` salió limpio** (12 recursos creados) y bronze absorbió el schema drift de HT-OS 5.0
+y del sensor de suciedad sin intervención.
+
+---
+
+## Antes de desplegar: lo que encontró la prueba local de punta a punta
+
+<details>
+<summary><b>L1 · <code>pip install pyspark</code> falla con <code>AttributeError: install_layout</code></b></summary>
+
+- **Qué pasó:** el `setuptools` del Python del sistema (Debian) no sabe construir el paquete de PySpark.
+- **Arreglo:** usar un entorno virtual (`python -m venv .venv`) con `pip`/`setuptools` actualizados.
+- **Lección:** nunca instalar dependencias de un proyecto en el Python del sistema.
+</details>
+
+<details>
+<summary><b>L2 · <code>module 'pyspark.sql.functions' has no attribute 'try_cast'</code> (y <code>try_to_date</code>)</b></summary>
+
+- **Qué pasó:** en SQL existen `try_cast` y `try_to_date`, pero en la API de Python de Spark 4 `try_cast` es un método
+  de columna (`col.try_cast("double")`) y `try_to_date` directamente no existe.
+- **Arreglo:** `F.col(x).try_cast(...)` y un helper `try_date()` con `to_date(try_to_timestamp(...))`.
+- **Lección:** con ANSI activo (default en Spark 4 y serverless) un `CAST` inválido es un ERROR; en silver se usan
+  las variantes `try_*` y una regla de calidad que cuenta los NULL.
+</details>
+
+<details>
+<summary><b>L3 · <code>INVALID_EXTRACT_BASE_FIELD_TYPE ... Can't extract a value from "p"</code></b></summary>
+
+- **Qué pasó:** un lote de órdenes del CMMS traía sólo `parts: []`. Al inferir el esquema del JSON, un array vacío se
+  tipa `ARRAY<STRING>` y después `p.part_code` no existe. **Auto Loader haría exactamente lo mismo** si los primeros
+  archivos que muestrea no traen repuestos.
+- **Arreglo:** `JSON_SCHEMA_HINTS` en bronze (`parts ARRAY<STRUCT<...>>`) y el generador manda `null` en vez de `[]`.
+- **Lección:** `schemaHints` no es sólo para CSV: en JSON fijalo para todo lo que la inferencia pueda adivinar mal.
+</details>
+
+<details>
+<summary><b>L4 · <code>does not support REPLACE TABLE AS SELECT</code> (Spark local)</b></summary>
+
+- **Qué pasó:** en Spark OSS el formato por defecto es Parquet; `CREATE OR REPLACE TABLE ... AS SELECT` sólo funciona con Delta.
+- **Arreglo:** `USING DELTA` explícito en los 7 marts (en Databricks no cambia nada).
+</details>
+
+<details>
+<summary><b>L5 · <code>[INVALID_IDENTIFIER] The unquoted identifier pd-gearbox_c is invalid</code></b></summary>
+
+- **Qué pasó:** `sum(gearbox_c) OVER pd - gearbox_c` con una ventana con nombre (`WINDOW pd AS ...`): el parser leyó
+  `pd-gearbox_c` como un identificador con guion.
+- **Arreglo:** paréntesis: `(sum(gearbox_c) OVER pd) - gearbox_c`.
+- **Ojo:** este arreglo se hizo en local DESPUÉS del primer deploy, y la primera corrida real falló justo en
+  `gold_marts` con este error (ver R2). Lección de proceso: **no desplegar hasta que la prueba local de punta a punta pase**.
+</details>
+
+<details>
+<summary><b>L6 · Quality gate: <code>toda medición tiene turbina (FK a dim_turbine): 540</code></b></summary>
+
+- **Qué pasó:** la primera versión SCD2 de cada turbina arrancaba a la hora de la carga inicial del CMMS (09:00);
+  las mediciones de la madrugada de ese día no encontraban versión vigente en el join point-in-time.
+- **Arreglo:** la versión 1 vale "desde siempre" (`1900-01-01`), práctica estándar de Kimball.
+- **Lección:** por eso existe el quality gate: el pipeline no falló, pero el dato estaba mal.
+</details>
+
+<details>
+<summary><b>L7 · Calibración de negocio: todos los PPA "CUMPLEN" siempre</b></summary>
+
+- **Qué pasó:** los volúmenes comprometidos eran 15-45 % de la generación esperada: imposible quedarse corto.
+- **Arreglo:** 50-75 % de la P50 (lo típico en un PPA real) y la adenda +20 % del data center.
+- **Lección:** los datos sintéticos también se validan con criterio de negocio, no sólo técnico.
+</details>
+
+<details>
+<summary><b>L8 · Test de integración: la foto inicial del CMMS salía con el firmware viejo</b></summary>
+
+- **Qué pasó:** si la historia arranca después de un cambio (ej. desde jun-2025, el firmware HT-OS 5.0 es de marzo), el
+  generador descartaba los cambios anteriores en vez de aplicarlos a la foto inicial.
+- **Arreglo:** los cambios previos a la primera carga se "pliegan" en el registro `I` (activos y contratos).
+</details>
+
+---
+
+## En Databricks
+
+<details open>
+<summary><b>R1 · <code>There are already 5 active runs (limit: 5)</code></b></summary>
+
+- **Qué pasó:** apenas se lanzó la primera corrida, quedó `PENDING` con ese mensaje aunque no había otras corridas activas.
+- **Qué hicimos:** nada: a los pocos segundos arrancó sola. Free Edition limita la concurrencia (corridas y tareas
+  simultáneas); por eso los `for_each` tienen `concurrency` 3-4.
+</details>
+
+<details open>
+<summary><b>R2 · <code>gold_marts</code>: <code>[INVALID_IDENTIFIER] ... pd-gearbox_c</code></b></summary>
+
+- **Qué pasó:** el mismo error L5. El bundle se desplegó con el código anterior al arreglo local.
+- **Arreglo:** redeploy + nueva corrida. Las tareas anteriores habían salido bien: bronze 505 s, silver 129 + 115 s.
+</details>
+
+<details open>
+<summary><b>R3 · Regenerar los archivos no sirve: Auto Loader no los vuelve a leer</b></summary>
+
+- **Qué pasó:** para la segunda corrida había que regenerar `ppa_contracts` (L7). Pero el generador sobrescribe los
+  archivos en la misma ruta, y Auto Loader, con `cloudFiles.allowOverwrites=false` (default), **ignora un archivo
+  ya procesado aunque cambie su contenido**.
+- **Arreglo:** `full_refresh=true` en el job: `00_setup` borra bronze/silver/gold/ops, los checkpoints y los
+  esquemas inferidos de Auto Loader antes de empezar.
+  ```bash
+  databricks bundle run andes_e2e -t dev --params full_refresh=true
+  ```
+- **Lección:** en un lakehouse real los archivos de landing son **inmutables**; si una fuente reenvía, reenvía archivos nuevos.
+</details>
+
+<details open>
+<summary><b>R4 · <code>governance</code>: <code>[PARSE_SYNTAX_ERROR] Syntax error at or near '''</code></b></summary>
+
+- **Qué pasó:** 5 comentarios del diccionario tenían `;` adentro ("...(m/s); null si estaba clavado") y el runner
+  separaba sentencias por cualquier `;`, incluso dentro de un string.
+- **Cómo lo encontramos:** corriendo `sql/governance/01_comments.sql` sentencia por sentencia contra el warehouse
+  (`143/153 OK`, los 10 que fallaban eran las mitades de los 5 comentarios).
+- **Arreglo:** `split_statements` ahora respeta `'...'`, `"..."`, `` `...` ``, bloques `$$...$$` y comentarios `--`
+  (con test). Después: **148/148 COMMENT, 70/70 PK/FK, 26/26 tags, 14/14 máscaras y row filters OK**.
+</details>
+
+<details open>
+<summary><b>R5 · Metric views: <code>Can't extract a value from "parque.park_name"... got "STRING"</code></b></summary>
+
+- **Qué pasó:** en `mv_curtailment` y `mv_mantenimiento` el join se llamaba `parque` y había una **dimensión
+  "Parque"**. Los nombres no distinguen mayúsculas: `parque.park_name` se resolvió como "el campo park_name de la
+  dimensión Parque" (que es un string).
+- **Cómo lo encontramos:** una metric view mínima con el join llamado `dp` funcionó a la primera.
+- **Arreglo:** join `park`. Las 7 metric views (con `version: 1.1`, `synonyms` y `joins`) y las 7 funciones quedaron OK.
+</details>
+
+<details open>
+<summary><b>R6 · <code>[CROSS_CATALOG_SCHEMA_REFERENCE_NOT_SUPPORTED] ... andes_viento_dev.gold</code></b></summary>
+
+- **Qué pasó:** las vistas y funciones se crearon bien, pero la última celda del notebook hacía
+  `SHOW VIEWS IN andes_viento_dev.gold`. En serverless ese comando no acepta `catálogo.esquema` si no es el catálogo actual.
+- **Arreglo:** consultar `andes_viento_dev.information_schema.tables` / `routines`.
+- **Lección:** una tarea puede fallar en la parte "decorativa" (mostrar resultados) después de hacer bien el trabajo:
+  leé el error completo antes de re-ejecutar.
+</details>
+
+<details open>
+<summary><b>R7 · Quality gate: <code>disponibilidad contractual entre 0 y 1 (1)</code></b></summary>
+
+- **Qué pasó:** una turbina-día dio **−0,0002**: 16,67 h de falla + 7,33 h sin dato = 24,00 h, pero calculado con
+  horas ya redondeadas a 2 decimales.
+- **Arreglo:** acotar a [0, 1] en `fact_availability_daily`. Para no reprocesar todo, se corrigió la fila con un
+  `UPDATE` (funciona como admin aunque la tabla tenga row filter) y se reparó sólo el gate.
+- **Lección:** el gate es la última barrera antes de que Genie muestre un número imposible.
+</details>
+
+<details open>
+<summary><b>R8 · Genie API: <code>Invalid export proto: instructions.example_question_sqls must be sorted by id</code></b></summary>
+
+- **Qué pasó:** la API valida que cada lista del `serialized_space` esté ordenada por `id`.
+- **Arreglo:** `build_genie.py` ordena todas las listas (`sample_questions`, `text_instructions`, `example_question_sqls`,
+  `sql_functions`, `benchmarks.questions`). Los 4 agents se crearon y el export confirmó tablas, metric views,
+  funciones, ejemplos y benchmarks.
+</details>
+
+<details open>
+<summary><b>R9 · <code>bundle deploy -t prod</code>: <code>An app with the same name already exists</code></b></summary>
+
+- **Qué pasó:** el nombre de una App es único en el workspace; el modo `development` NO le agrega prefijo como a los
+  jobs. Además Free Edition permite una sola App.
+- **Arreglo:** la App se declara sólo en `targets.dev.resources` (`databricks.yml`). Prod: 11 recursos OK.
+</details>
+
+<details open>
+<summary><b>R10 · Calibración con datos reales: la flota era "demasiado sana"</b></summary>
+
+- **Qué pasó:** con los datos reales de la primera corrida completa, ningún parque bajaba del 97 % de
+  disponibilidad (el caso 5 quedaba sin reclamos) y Cañadón León daba −15,4 % en julio 2025 (guionado para ~−18 %).
+- **Arreglo de negocio:** se agregó a la historia un **lote defectuoso de multiplicadoras de Hanse Turbinen Werke**
+  (mar-2024 → dic-2025), algo que pasa en la industria; el tope de red de julio 2025 pasó de 60 % a 50 %.
+- **Lección:** los números del "por qué" se documentan con lo que dio la corrida real, no con lo que se esperaba.
+</details>
+
+<details open>
+<summary><b>R11 · Genie: <code>INVALID_CERTIFIED_ANSWER_FUNCTION_EXCEPTION ... argument type is not supported: date</code></b></summary>
+
+- **Qué pasó:** la primera evaluación de benchmarks dio **0 aciertos**. No era el comparador: Genie rechazaba la
+  configuración COMPLETA del agent porque `fn_perdida_curtailment` tenía parámetros `DATE`, y las funciones confiables
+  (*certified answers*) no los admiten. El deploy por API no falla: el error aparece recién al preguntar.
+- **Cómo lo encontramos:** una pregunta suelta con `scripts/genie_ask.py` mostró el error completo.
+- **Arreglo:** parámetros `STRING 'yyyy-MM-dd'` y `to_date()` adentro. La misma pregunta volvió con 350,0 MWh (exacto).
+- **Lección:** después de desplegar un agent, **hacele una pregunta** antes de dar el deploy por bueno (lo hace `genie_eval.py`).
+</details>
+
+<details open>
+<summary><b>R12 · Genie pasa <code>'NULL'</code> como texto a una función confiable → 0 filas</b></summary>
+
+- **Qué pasó:** en prod, "¿Cuántos MWh perdimos por curtailment en 2025?" generó
+  `fn_perdida_curtailment(p_parque => 'NULL', ...)`: el **texto** `'NULL'`, no el valor nulo. Ningún parque se llama
+  "NULL" → tabla vacía, sin error.
+- **Arreglo:** las funciones tratan `NULL`, `''`, `'NULL'` y `'TODOS'` como "todos los parques", y las fechas con
+  `try_to_date` (una fecha inválida = sin filtro). Aplicado en dev y prod; misma pregunta → 10 parques con datos.
+- **Lección:** los parámetros de una función confiable los llena un LLM. Programalos a la defensiva, como si fueran
+  un formulario web.
+</details>
+
+<details open>
+<summary><b>R13 · El job diario "deshizo" los arreglos: Finanzas pasó de 17/21 a 0/21</b></summary>
+
+- **Qué pasó:** los arreglos de R11 y R12 los apliqué a mano (`runsql.py`) y commiteé, pero **no** hice
+  `databricks bundle deploy -t dev`. El job diario corrió `gold_marts` y `semantic_layer` con la copia vieja del SQL que
+  estaba en el workspace y recreó `fn_perdida_curtailment` con parámetros `DATE`. Resultado: el agent Finanzas falló
+  en las 21 preguntas (los otros 3 casi no usan esa función como certificada).
+- **Arreglo:** `bundle deploy` de dev y prod, reaplicar el SQL y, para que no vuelva a pasar en silencio,
+  `deploy_genie.py` ahora **revisa los parámetros de cada función confiable** antes de desplegar y corta con un
+  mensaje claro si encuentra `DATE`/`TIMESTAMP`.
+- **Lección:** lo que está en el workspace es lo último que **desplegaste**, no lo último que commiteaste. Un arreglo
+  "a mano" en el catálogo dura hasta la próxima corrida del job. Por eso CI despliega siempre desde git.
+</details>
+
+<details open>
+<summary><b>R14 · "Llegaste al 85 % de 500 tablas" con sólo ~180 tablas vivas</b></summary>
+
+- **Qué pasó:** Databricks mandó dos mails (80 % y 85 % de la cuota *Table per Metastore*). Contando
+  `information_schema.tables` había ~180 tablas propias. La diferencia: **Unity Catalog también cuenta los objetos
+  borrados mientras están en retención (~7 días, los que lista `SHOW TABLES DROPPED IN ...`)**:
+  - los catálogos de proyectos viejos que borramos (`apd`, `andes_pruebas`, `workspace.*`: ~146);
+  - **cada `CREATE OR REPLACE VIEW`** (también las metric views) crea un objeto nuevo y deja el anterior "borrado":
+    `SHOW TABLES DROPPED IN andes_viento_dev.gold` mostró `mv_curtailment` 3 veces, 31 objetos en total. Con 10
+    vistas por corrida y un job diario eran ~70 fantasmas por target.
+  - un reset con `full_refresh=true` borra y recrea todas las tablas: +58 fantasmas de golpe.
+- **Arreglo:** `run_sql_file` guarda una huella (sha256) de cada vista en `ops.sql_fingerprints` y **sólo la recrea si
+  cambió la definición**. Los fantasmas que ya existen se purgan solos cuando vence la retención.
+- **Lección:** en Free Edition la cuota es un recurso más, como la plata. Evitá `full_refresh` salvo que haga falta,
+  no recrees lo que no cambió y medí con `SHOW TABLES DROPPED`, no sólo con `information_schema`.
+</details>
+
+<details open>
+<summary><b>R15 · El mes en curso aparecía como un faltante de USD 1,4 M</b></summary>
+
+- **Qué pasó:** el job diario trajo el 2026-10-01. `fact_ppa_settlement` liquidó octubre con 1 día entregado contra el
+  mes entero comprometido (faltante enorme) y `mart_generation_vs_budget` comparó 1 día real contra el presupuesto del
+  mes completo (−97 %). Lo encontró la evaluación de Genie: "¿mes con mayor costo de faltantes?" pasó a ser 2026-10.
+- **Arreglo:** el mes abierto no se liquida (`best_option = 'MES_ABIERTO'`, faltante NULL; la proyección vive en
+  `mart_ppa_forecast`) y el presupuesto del mes en curso se prorratea por días con datos (`is_month_to_date`).
+- **Lección:** la carga histórica nunca ve meses parciales; el incremental sí. Probá el job diario antes de dar por
+  bueno un mart mensual.
+</details>
+
+<details open>
+<summary><b>R16 · Genie prefiere una función certificada aunque no sirva para la pregunta</b></summary>
+
+- **Qué pasó:** en Finanzas, "desvío de **toda la empresa** en 2025" terminaba en `fn_explicar_desvio('TOTAL EMPRESA', '2025-01')`:
+  0 filas. La función es para un parque y un mes. Ni una instrucción ("es para UN parque y UN mes") ni 5 ejemplos SQL
+  nuevos lo corrigieron: en 3 rondas siguió eligiendo la función.
+- **Arreglo:** sacar `fn_explicar_desvio` del agent de Finanzas (sus preguntas son agregadas). Queda en Operación,
+  donde sí se pregunta por un parque y un mes.
+- **Lección:** una función certificada es una "respuesta oficial" y Genie la busca con ganas. Dásela sólo al agent cuyas
+  preguntas encajan con sus parámetros. Y medí siempre: entre rondas sin cambios en un agent, Genie cambió 1 o 2
+  respuestas por agent (no es determinístico), por eso los benchmarks se corren completos.
+</details>
+
+## Tiempos reales por tarea
+
+Corrida #3 en dev (`run_id 486286601686508`, `scale_factor = 0.1`, serverless de Free Edition): **12/12 SUCCESS**.
+
+| tarea | segundos | qué hace |
+|---|---:|---|
+| `setup` | 36 | crea schemas y tablas de ops |
+| `should_generate` | 1 | condition: ¿generar datos? |
+| `generate_data` | 654 | for_each de 11 fuentes, concurrencia 3 (~3 GB en landing) |
+| `bronze_ingest` | 494 | Auto Loader de las 11 fuentes |
+| `silver_reference` | 822 | for_each de 8 entidades: cada una tarda 41-101 s, el resto es cola (tope de concurrencia de Free Edition) |
+| `silver_telemetry` | 114 | SCADA, inversores y clima |
+| `gold_dimensions` | 63 | 7 dimensiones (2 SCD2) |
+| `gold_facts` | 74 | 5 hechos |
+| `gold_marts` | 57 | 9 archivos SQL |
+| `governance` | 207 | comments, PK/FK, tags, máscaras y row filters |
+| `semantic_layer` | 26 | 7 metric views + 7 funciones |
+| `quality_gate` | 18 | 10 chequeos + ratio de cuarentena |
+| **total (suma)** | **2566** | ≈ 43 min; el reloj real es parecido porque las tareas van en serie salvo governance ∥ semantic |
+
+**Prod** (`andes_viento`, run `149706943546422`): 12/12 SUCCESS con tiempos parecidos (generate 484 s, bronze 515 s,
+silver_reference 125 s porque esta vez no hubo cola: es la diferencia entre correr solo o con otra corrida al lado).
+
+**Job diario** (`andes-viento-daily`, run `662896490980765`): `generate_next_day` 92 s (genera el 2026-10-01 de las
+11 fuentes) → `run_pipeline` 722 s, que dispara el e2e con `generate=false`:
+
+| tarea | segundos | nota |
+|---|---:|---|
+| `setup` | 26 | |
+| `should_generate` | 1 | outcome `false` |
+| `generate_data` | — | **EXCLUDED** por la condición: así tiene que ser |
+| `bronze_ingest` | 118 | corre igual gracias a `run_if: NONE_FAILED`; Auto Loader sólo lee los archivos nuevos |
+| `silver_reference` | 104 | |
+| `silver_telemetry` | 63 | `_insert_only`: sólo filas nuevas |
+| `gold_dimensions` | 52 | |
+| `gold_facts` | 64 | incremental por watermark + `replaceWhere` |
+| `gold_marts` | 67 | los marts se recalculan completos (son chicos) |
+| `governance` | 202 | la tarea más cara del incremental: se podría saltear si no cambió el diccionario |
+| `semantic_layer` | 33 | |
+| `quality_gate` | 20 | OK |
+
+Resultado: `v_park_daily` llega al 2026-10-01 en los 13 parques. Un día nuevo cuesta ~12 min contra ~43 de la carga
+completa; casi todo es costo fijo (arranque de serverless y gobierno), no volumen.
+
+**Pipeline LDP** (`andes-viento-ldp`, dev, update `5a8e6559`): **COMPLETED al primer intento en 3 min 14 s**
+(serverless). Expectations del SCADA sobre 7.259.550 lecturas:
+
+| expectation | acción | pasaron | fallaron |
+|---|---|---:|---:|
+| `turbina_informada` | DROP | 7.259.550 | 0 |
+| `fecha_parseable` | DROP | 7.259.550 | 0 |
+| `viento_posible` | WARN | 7.259.550 | 0 |
+| `potencia_en_rango` | WARN | 7.258.917 | **633** |
+| `temperatura_posible` | WARN | 7.257.384 | **2.166** |
+| `assets_clean.id_presente` | FAIL UPDATE | 119 | 0 |
+
+Las 633 + 2.166 son exactamente la suciedad "imposible" que inyecta el generador (picos de potencia por encima de 6 MW
+y temperaturas de multiplicadora ≥ 200 °C). En el camino PySpark esas mismas filas terminan con el valor en NULL (`null_impossible`).
+
+> **Ojo con la cuota de 500 tablas de Free Edition.** El pipeline crea 13 tablas propias **y 14 tablas internas**
+> `__materialization_mat_*` (más su `event_log`): ~27 por pipeline y por target. Con NovaMart + Andes dev + prod
+> llegamos al 80 % y Databricks mandó un mail de aviso. Lo que hicimos: borrar catálogos de proyectos viejos
+> (de ~300 tablas propias a 154). Si aprieta: borrar el target prod (`andes_viento`) o el schema LDP de dev cuando
+> no se use (`DROP SCHEMA andes_viento_dev.dev_<usuario>_ldp CASCADE` o `databricks bundle destroy` del pipeline).
+
+## Cómo reparar sin correr todo de nuevo
+
+```bash
+databricks jobs repair-run <run_id> --rerun-all-failed-tasks --rerun-dependent-tasks
+# si ya hubo una reparación, la CLI pide la última:
+databricks jobs repair-run <run_id> --rerun-all-failed-tasks --latest-repair-id <repair_id>
+```
+Para depurar SQL, ejecutá el archivo sentencia por sentencia contra el warehouse (Statement Execution API) en vez de
+re-correr el job: encontrar R4 y R5 tomó minutos, no corridas de 45.

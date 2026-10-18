@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" width="1200" height="680" font-family="-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" role="img" aria-label="Mockup de un Genie Agent de Andes Viento Austral">
+  <rect width="1200" height="680" rx="12" fill="#f7f8fa"/>
+  <rect width="1200" height="48" rx="12" fill="#ffffff"/><rect y="36" width="1200" height="12" fill="#ffffff"/>
+  <circle cx="24" cy="24" r="6" fill="#ff5f57"/><circle cx="44" cy="24" r="6" fill="#febc2e"/><circle cx="64" cy="24" r="6" fill="#28c840"/>
+  <text x="96" y="30" font-size="14" font-weight="700" fill="#1b3139">Genie</text>
+  <text x="150" y="30" font-size="13" fill="#5f7281">› Andes · Operación de parques [dev]</text>
+  <rect x="1030" y="12" width="150" height="26" rx="6" fill="#eef2ff" stroke="#c7d2fe"/><text x="1105" y="30" text-anchor="middle" font-size="12" fill="#3730a3">Agent mode ✦</text>
+  <rect x="0" y="48" width="230" height="632" fill="#ffffff" stroke="#e5e7eb"/>
+  <g font-size="12" fill="#374151">
+    <text x="18" y="80" font-weight="700" fill="#111827">Datos</text>
+    <text x="18" y="104">▦ gold.v_park_daily</text><text x="18" y="126">▦ gold.mart_generation_vs_budget</text>
+    <text x="18" y="148">▦ gold.mart_panel_cleaning</text><text x="18" y="170">◈ gold.mv_generacion</text>
+    <text x="18" y="206" font-weight="700" fill="#111827">Funciones confiables</text>
+    <text x="18" y="230">ƒ fn_explicar_desvio</text><text x="18" y="252">ƒ fn_recomendacion_limpieza</text>
+    <text x="18" y="274">ƒ fn_perdida_curtailment</text>
+    <text x="18" y="310" font-weight="700" fill="#111827">Benchmarks</text>
+    <text x="18" y="334">22 preguntas · Run all ▸</text>
+  </g>
+  <rect x="640" y="78" width="530" height="44" rx="18" fill="#1b3139"/>
+  <text x="662" y="105" font-size="14" fill="#ffffff">¿Por qué Cañadón León generó menos en julio 2025?</text>
+  <rect x="260" y="140" width="910" height="440" rx="12" fill="#ffffff" stroke="#e5e7eb"/>
+  <rect x="280" y="160" width="74" height="22" rx="11" fill="#dcfce7"/><text x="317" y="175" text-anchor="middle" font-size="11" fill="#166534">✓ Trusted</text>
+  <text x="366" y="176" font-size="12" fill="#6b7280">gold.fn_explicar_desvio('Cañadón León', '2025-07')</text>
+  <text x="280" y="212" font-size="14" fill="#111827">Cañadón León generó 18 % menos que el presupuesto P50. La cascada del desvío:</text>
+  <g font-size="12.5">
+    <rect x="280" y="228" width="870" height="28" fill="#f3f4f6"/>
+    <text x="292" y="247" font-weight="700" fill="#374151">concepto</text><text x="860" y="247" font-weight="700" fill="#374151" text-anchor="end">MWh</text><text x="1130" y="247" font-weight="700" fill="#374151" text-anchor="end">% del presupuesto</text>
+    <text x="292" y="277">Presupuesto P50</text><text x="860" y="277" text-anchor="end">7.000</text><text x="1130" y="277" text-anchor="end">100 %</text>
+    <text x="292" y="303">Efecto del recurso (viento)</text><text x="860" y="303" text-anchor="end" fill="#b91c1c">−</text><text x="1130" y="303" text-anchor="end" fill="#b91c1c">−</text>
+    <text x="292" y="329">Curtailment por encima de lo presupuestado</text><text x="860" y="329" text-anchor="end" fill="#b91c1c">−</text><text x="1130" y="329" text-anchor="end" fill="#b91c1c">−</text>
+    <text x="292" y="355">Fallas y mantenimiento (multiplicadora LEO-01)</text><text x="860" y="355" text-anchor="end" fill="#b91c1c">−</text><text x="1130" y="355" text-anchor="end" fill="#b91c1c">−</text>
+    <text x="292" y="381">Hielo en palas (ola polar 3-5 de julio)</text><text x="860" y="381" text-anchor="end" fill="#b91c1c">−</text><text x="1130" y="381" text-anchor="end" fill="#b91c1c">−</text>
+    <text x="292" y="407" font-weight="700">Generación real</text><text x="860" y="407" text-anchor="end" font-weight="700">≈ 5.700</text><text x="1130" y="407" text-anchor="end" font-weight="700">82 %</text>
+  </g>
+  <rect x="280" y="430" width="870" height="120" rx="8" fill="#f9fafb" stroke="#e5e7eb"/>
+  <g transform="translate(300 530)">
+    <rect x="0" y="-80" width="80" height="80" fill="#3e63dd"/><rect x="120" y="-80" width="80" height="12" fill="#e5484d"/>
+    <rect x="240" y="-68" width="80" height="14" fill="#e5484d"/><rect x="360" y="-54" width="80" height="10" fill="#e5484d"/>
+    <rect x="480" y="-44" width="80" height="9" fill="#e5484d"/><rect x="600" y="-66" width="80" height="66" fill="#30a46c"/>
+  </g>
+  <text x="300" y="566" font-size="11" fill="#6b7280">Mockup ilustrativo: las cifras reales salen de la corrida (ver docs/genie/agent_mode.md)</text>
+  <rect x="260" y="610" width="910" height="44" rx="22" fill="#ffffff" stroke="#d1d5db"/>
+  <text x="284" y="637" font-size="13" fill="#9ca3af">Preguntá algo sobre tus parques…</text>
+</svg>
