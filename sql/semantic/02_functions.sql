@@ -10,7 +10,7 @@
 -- =============================================================================
 
 CREATE OR REPLACE FUNCTION ${gold}.fn_perdida_curtailment(
-    p_parque STRING DEFAULT NULL COMMENT 'Código o nombre del parque; NULL = todos',
+    p_parque STRING DEFAULT NULL COMMENT 'Código o nombre del parque; NULL, vacío o TODOS = todos',
     p_desde STRING DEFAULT NULL COMMENT 'Fecha inicial yyyy-MM-dd (incluida); NULL = desde el inicio',
     p_hasta STRING DEFAULT NULL COMMENT 'Fecha final yyyy-MM-dd (incluida); NULL = hasta el último dato')
 RETURNS TABLE (park_name STRING, curtailed_mwh DOUBLE, curtailed_pct_of_potential DOUBLE,
@@ -26,9 +26,9 @@ RETURN
     FROM ${gold}.fact_curtailment_hourly f
     JOIN ${gold}.dim_park p ON p.park_key = f.park_key
     LEFT JOIN ${gold}.v_park_price_month pr ON pr.park_code = f.park_code AND pr.month_start = trunc(f.reading_date, 'MM')
-    WHERE (p_parque IS NULL OR upper(p.park_code) = upper(p_parque) OR lower(p.park_name) = lower(p_parque))
-      AND (p_desde IS NULL OR f.reading_date >= to_date(p_desde))
-      AND (p_hasta IS NULL OR f.reading_date <= to_date(p_hasta))
+    WHERE (coalesce(upper(trim(p_parque)), 'NULL') IN ('NULL', '', 'TODOS') OR upper(p.park_code) = upper(p_parque) OR lower(p.park_name) = lower(p_parque))
+      AND (try_to_date(p_desde) IS NULL OR f.reading_date >= to_date(p_desde))
+      AND (try_to_date(p_hasta) IS NULL OR f.reading_date <= to_date(p_hasta))
     GROUP BY p.park_name;
 
 CREATE OR REPLACE FUNCTION ${gold}.fn_ranking_baterias(
@@ -54,7 +54,7 @@ RETURN
     FROM w JOIN ${gold}.dim_park p ON p.park_code = w.park_code;
 
 CREATE OR REPLACE FUNCTION ${gold}.fn_turbinas_en_riesgo(
-    p_parque STRING DEFAULT NULL COMMENT 'Código o nombre del parque; NULL = todos')
+    p_parque STRING DEFAULT NULL COMMENT 'Código o nombre del parque; NULL, vacío o TODOS = todos')
 RETURNS TABLE (reading_date DATE, park_code STRING, turbine_id STRING, turbine_tag STRING, health_score DOUBLE,
                risk_level STRING, suspected_component STRING, gearbox_residual_7d DOUBLE, vibration_ratio DOUBLE)
 COMMENT 'Turbinas con riesgo MEDIO o ALTO en el último día con datos, ordenadas de peor a mejor'
@@ -66,11 +66,11 @@ RETURN
     JOIN ${gold}.dim_park p ON p.park_code = h.park_code
     WHERE h.reading_date = (SELECT max(reading_date) FROM ${gold}.mart_turbine_health)
       AND h.risk_level IN ('MEDIO', 'ALTO')
-      AND (p_parque IS NULL OR upper(p.park_code) = upper(p_parque) OR lower(p.park_name) = lower(p_parque))
+      AND (coalesce(upper(trim(p_parque)), 'NULL') IN ('NULL', '', 'TODOS') OR upper(p.park_code) = upper(p_parque) OR lower(p.park_name) = lower(p_parque))
     ORDER BY h.health_score;
 
 CREATE OR REPLACE FUNCTION ${gold}.fn_recomendacion_limpieza(
-    p_parque STRING DEFAULT NULL COMMENT 'Código o nombre del parque solar; NULL = todos')
+    p_parque STRING DEFAULT NULL COMMENT 'Código o nombre del parque solar; NULL, vacío o TODOS = todos')
 RETURNS TABLE (park_name STRING, reading_date DATE, soiling_loss_pct DOUBLE, days_since_cleaning INT,
                lost_usd_since_cleaning DOUBLE, cleaning_cost_usd DOUBLE, rain_forecast_tomorrow_mm DOUBLE,
                recommendation STRING)
@@ -81,7 +81,7 @@ RETURN
     FROM ${gold}.mart_panel_cleaning c
     JOIN ${gold}.dim_park p ON p.park_code = c.park_code
     WHERE c.reading_date = (SELECT max(reading_date) FROM ${gold}.mart_panel_cleaning)
-      AND (p_parque IS NULL OR upper(p.park_code) = upper(p_parque) OR lower(p.park_name) = lower(p_parque));
+      AND (coalesce(upper(trim(p_parque)), 'NULL') IN ('NULL', '', 'TODOS') OR upper(p.park_code) = upper(p_parque) OR lower(p.park_name) = lower(p_parque));
 
 CREATE OR REPLACE FUNCTION ${gold}.fn_proyeccion_ppa(
     p_contrato STRING DEFAULT NULL COMMENT 'Contrato (PPA-2023-007) o parte del nombre del cliente; NULL = todos')

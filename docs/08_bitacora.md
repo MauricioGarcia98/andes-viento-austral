@@ -202,6 +202,18 @@ y del sensor de suciedad sin intervención.
 - **Lección:** después de desplegar un agent, **hacele una pregunta** antes de dar el deploy por bueno (lo hace `genie_eval.py`).
 </details>
 
+<details open>
+<summary><b>R12 · Genie pasa <code>'NULL'</code> como texto a una función confiable → 0 filas</b></summary>
+
+- **Qué pasó:** en prod, "¿Cuántos MWh perdimos por curtailment en 2025?" generó
+  `fn_perdida_curtailment(p_parque => 'NULL', ...)`: el **texto** `'NULL'`, no el valor nulo. Ningún parque se llama
+  "NULL" → tabla vacía, sin error.
+- **Arreglo:** las funciones tratan `NULL`, `''`, `'NULL'` y `'TODOS'` como "todos los parques", y las fechas con
+  `try_to_date` (una fecha inválida = sin filtro). Aplicado en dev y prod; misma pregunta → 10 parques con datos.
+- **Lección:** los parámetros de una función confiable los llena un LLM. Programalos a la defensiva, como si fueran
+  un formulario web.
+</details>
+
 ## Tiempos reales por tarea
 
 Corrida #3 en dev (`run_id 486286601686508`, `scale_factor = 0.1`, serverless de Free Edition): **12/12 SUCCESS**.
