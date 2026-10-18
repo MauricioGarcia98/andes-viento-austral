@@ -44,6 +44,26 @@ sample_questions:
   - "¿Cuánto nos costó en USD el desvío contra presupuesto de este año?"
   - "¿Por qué subió el costo de mantenimiento en dólares en 2024 si la inflación bajó?"
 examples:
+  - question: "Desvío contra presupuesto de toda la empresa en un año (MWh y %)"
+    sql: |
+      SELECT year, round(sum(actual_mwh) - sum(budget_p50_mwh), 1) AS desvio_mwh,
+             round(sum(actual_mwh) / sum(budget_p50_mwh) - 1, 4) AS desvio_pct
+      FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2025 GROUP BY year
+  - question: "¿Qué curtailment y disponibilidad asumía el presupuesto por región?"
+    sql: |
+      SELECT year, region, max(assumed_curtailment) AS curtailment_supuesto, max(assumed_availability) AS disponibilidad_supuesta
+      FROM ${catalog}.gold.mart_generation_vs_budget WHERE year = 2025 GROUP BY ALL
+  - question: "Curtailment de la empresa por año"
+    sql: |
+      SELECT year(reading_date) AS anio, round(sum(lost_curtailment_mwh), 1) AS mwh, round(sum(lost_value_spot_usd), 0) AS usd_spot
+      FROM ${catalog}.gold.fact_curtailment_hourly GROUP BY ALL ORDER BY anio
+  - question: "Horas con orden de CAMMESA por parque en un año"
+    sql: |
+      SELECT p.park_name, count_if(f.has_instruction) AS horas_con_orden
+      FROM ${catalog}.gold.fact_curtailment_hourly f JOIN ${catalog}.gold.dim_park p ON p.park_key = f.park_key
+      WHERE year(f.reading_date) = 2025 GROUP BY ALL ORDER BY horas_con_orden DESC
+  - question: "Inversión total si se instala una opción de batería en todos los parques"
+    sql: "SELECT option_code, sum(battery_capex_usd) AS capex_total_usd FROM ${catalog}.gold.fn_ranking_baterias(12) WHERE option_code = 'BESS-30x2' GROUP BY option_code"
   - question: "¿Cuántos MWh y USD perdimos por curtailment en 2025?"
     sql: "SELECT * FROM ${catalog}.gold.fn_perdida_curtailment(NULL, '2025-01-01', '2025-12-31')"
   - question: "¿En qué parque conviene invertir en baterías?"

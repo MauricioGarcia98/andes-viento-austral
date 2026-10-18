@@ -94,7 +94,7 @@ benchmarks:
     sql: "SELECT park_code, round(sum(fault_h), 1) AS horas FROM ${catalog}.gold.fact_availability_daily WHERE year(reading_date) = 2025 GROUP BY park_code ORDER BY horas DESC LIMIT 1"
   - q: "Disponibilidad contractual móvil 12 meses de Cañadón León en el último mes"
     sql: "SELECT availability_12m FROM ${catalog}.gold.mart_warranty_claims WHERE park_code = 'LEO' AND month_start = (SELECT max(month_start) FROM ${catalog}.gold.mart_warranty_claims)"
-  - q: "¿En cuántos meses corresponde reclamar al fabricante Hanse Turbinen Werke?"
+  - q: "¿En cuántos casos parque-mes corresponde reclamar al fabricante Hanse Turbinen Werke?"
     sql: "SELECT count(*) FROM ${catalog}.gold.mart_warranty_claims WHERE manufacturer = 'Hanse Turbinen Werke' AND claim_eligible"
   - q: "¿Cuántos USD de liquidated damages se devengaron en total?"
     sql: "SELECT round(sum(ld_accrued_usd), 0) FROM ${catalog}.gold.mart_warranty_claims"
