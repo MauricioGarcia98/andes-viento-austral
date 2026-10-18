@@ -14,7 +14,8 @@ Nunca edites el JSON a mano ni cambies el agent sólo desde la UI: lo que no est
 2. **¿Es una métrica con definición oficial?** Que viva en una metric view (`sql/semantic/01_metric_views.sql`) con
    `synonyms` en el vocabulario de la gente ("recorte", "limitación", "multa del fabricante").
 3. **¿Tiene una respuesta certificada?** Función de UC en `sql/semantic/02_functions.sql` (parámetros con
-   `DEFAULT NULL`, aceptar código o nombre de parque) y agregarla a `functions:` del YAML.
+   `DEFAULT NULL`, aceptar código o nombre de parque; **nunca parámetros `DATE`**: Genie rechaza el agent entero,
+   usar `STRING 'yyyy-MM-dd'` y `to_date()` adentro) y agregarla a `functions:` del YAML.
 4. **¿Es un patrón de SQL difícil?** Un `examples:` con la pregunta como la diría el usuario.
 5. Recién al final, una línea más en `instructions:` (cortas: Genie las sigue mejor).
 

@@ -31,6 +31,11 @@ métrica que no existe, un grano confuso). La skill `andes-genie-agent-authoring
 Configuración versionada: [`genie/src/*.yml`](../genie/src) (fuente) → [`genie/agents/*.json`](../genie/agents)
 (`serialized_space`). Resultados de la evaluación: [genie/resultados_benchmarks.md](genie/resultados_benchmarks.md).
 
+> ⚠️ **Funciones confiables sin parámetros `DATE`.** Si una función certificada tiene un parámetro `DATE`, el deploy
+> por API funciona, pero **todas** las preguntas del agent fallan con `INVALID_CERTIFIED_ANSWER_FUNCTION_EXCEPTION ...
+> argument type is not supported: date`. Usá `STRING` (`'2025-07-01'`) y convertí con `to_date()` adentro de la
+> función. Nos pasó de verdad: ver R11 en la [bitácora](08_bitacora.md).
+
 ## Anatomía de un `serialized_space` (version 2)
 
 ```json

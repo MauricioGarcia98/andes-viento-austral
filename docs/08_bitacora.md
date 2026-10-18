@@ -204,7 +204,24 @@ y del sensor de suciedad sin intervención.
 
 ## Tiempos reales por tarea
 
-<!-- TIEMPOS -->
+Corrida #3 en dev (`run_id 486286601686508`, `scale_factor = 0.1`, serverless de Free Edition): **12/12 SUCCESS**.
+
+| tarea | segundos | qué hace |
+|---|---:|---|
+| `setup` | 36 | crea schemas y tablas de ops |
+| `should_generate` | 1 | condition: ¿generar datos? |
+| `generate_data` | 654 | for_each de 11 fuentes, concurrencia 3 (~3 GB en landing) |
+| `bronze_ingest` | 494 | Auto Loader de las 11 fuentes |
+| `silver_reference` | 822 | for_each de 8 entidades: cada una tarda 41-101 s, el resto es cola (tope de concurrencia de Free Edition) |
+| `silver_telemetry` | 114 | SCADA, inversores y clima |
+| `gold_dimensions` | 63 | 7 dimensiones (2 SCD2) |
+| `gold_facts` | 74 | 5 hechos |
+| `gold_marts` | 57 | 9 archivos SQL |
+| `governance` | 207 | comments, PK/FK, tags, máscaras y row filters |
+| `semantic_layer` | 26 | 7 metric views + 7 funciones |
+| `quality_gate` | 18 | 10 chequeos + ratio de cuarentena |
+| **total (suma)** | **2566** | ≈ 43 min; el reloj real es parecido porque las tareas van en serie salvo governance ∥ semantic |
+
 
 ## Cómo reparar sin correr todo de nuevo
 
