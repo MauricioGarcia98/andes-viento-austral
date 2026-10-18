@@ -10,7 +10,18 @@
 | landing (sin comprimir / gzip) | ~3 GB / ~0,4 GB | ~30 GB / ~4 GB | ~300 GB / ~40 GB |
 | `fact_turbine_10min` | ~7 M | ~70 M | ~700 M |
 
-Los tiempos reales de cada tarea a SF 0,1 están en la [bitácora](08_bitacora.md) y en `ops.pipeline_runs`.
+## Tiempos reales (Free Edition, SF 0,1)
+
+| corrida | duración | lo más caro |
+|---|---|---|
+| carga completa (e2e, 12 tareas) | ~43 min | `silver_reference` 822 s (mucho es cola por el tope de corridas), `generate_data` 654 s, `bronze_ingest` 494 s |
+| un día nuevo (job diario) | ~12 min | `governance` 202 s (costo fijo: se reaplica todo el gobierno) |
+| pipeline declarativo (LDP) | 3 min 14 s | — |
+| evaluación de Genie (86 preguntas) | ~90 min | la API de Genie: ~1 minuto por pregunta |
+
+Casi todo el incremental es **costo fijo** (arrancar serverless, reaplicar gobierno), no volumen: con SF 1 la carga
+completa crece con la flota, pero el día nuevo casi no. Detalle por tarea en la [bitácora](08_bitacora.md) y en
+`ops.pipeline_runs`.
 
 ## Decisiones de performance (y su porqué)
 

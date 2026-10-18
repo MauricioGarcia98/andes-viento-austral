@@ -1,7 +1,17 @@
 # 🎓 Ruta de aprendizaje · Andes Viento Austral
 
-21 módulos progresivos, todos con **los datos del proyecto**, ejercicios y soluciones. Importá la carpeta
-`learning/` al workspace (viene con el bundle en `.bundle/andes-viento-austral/dev/files/learning`).
+21 módulos progresivos, todos con **los datos del proyecto**, ejercicios y soluciones.
+
+**Antes de empezar** necesitás el proyecto desplegado y el job principal corrido una vez (los módulos consultan las
+tablas de `andes_viento_dev`): seguí la [guía desde la web](../docs/11_guia_desde_la_web.md) o la
+[guía por terminal](../docs/10_despliegue_y_cicd.md).
+
+**Dónde están en el workspace:** si trajiste el código con un Git folder, en `andes-viento-austral/learning/`. Si
+desplegaste con la terminal, en `Workspace → Users → <tu usuario> → .bundle → andes-viento-austral → dev → files →
+learning`.
+
+**Cómo abrir un módulo:** clic en el archivo → arriba elegí el cómputo (*Serverless* para los `.py`, *Serverless
+Starter Warehouse* para los `.sql`) → corré las celdas de a una con Shift + Enter.
 
 | # | módulo | tema | tablas que usa |
 |---|---|---|---|

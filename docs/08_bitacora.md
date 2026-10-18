@@ -4,6 +4,40 @@
 > cómo se arregló y qué aprendimos. Workspace: **Databricks Free Edition**, compute serverless, CLI v1.21,
 > `scale_factor = 0.1`. Los errores de NovaMart ya estaban aplicados desde el día 1 (ver más abajo).
 
+## Cómo leer esta bitácora
+
+Cada error tiene el mismo formato: **qué pasó** (con el mensaje real), **cómo lo encontramos**, **el arreglo** y **la
+lección**. Los `L` aparecieron en la prueba local (antes de tocar Databricks); los `R`, en el workspace real. Para
+la historia completa en orden, ver [17 · Cómo se construyó](17_como_se_construyo.md); para cómo se detecta cada tipo
+de error, [18 · Pruebas](18_pruebas.md).
+
+| # | error |
+|---|---|
+| L1 | pip install pyspark falla con AttributeError: install_layout |
+| L2 | module 'pyspark.sql.functions' has no attribute 'try_cast' (y try_to_date) |
+| L3 | INVALID_EXTRACT_BASE_FIELD_TYPE ... Can't extract a value from "p" |
+| L4 | does not support REPLACE TABLE AS SELECT (Spark local) |
+| L5 | [INVALID_IDENTIFIER] The unquoted identifier pd-gearbox_c is invalid |
+| L6 | Quality gate: toda medición tiene turbina (FK a dim_turbine): 540 |
+| L7 | Calibración de negocio: todos los PPA "CUMPLEN" siempre |
+| L8 | Test de integración: la foto inicial del CMMS salía con el firmware viejo |
+| R1 | There are already 5 active runs (limit: 5) |
+| R2 | gold_marts: [INVALID_IDENTIFIER] ... pd-gearbox_c |
+| R3 | Regenerar los archivos no sirve: Auto Loader no los vuelve a leer |
+| R4 | governance: [PARSE_SYNTAX_ERROR] Syntax error at or near ''' |
+| R5 | Metric views: Can't extract a value from "parque.park_name"... got "STRING" |
+| R6 | [CROSS_CATALOG_SCHEMA_REFERENCE_NOT_SUPPORTED] ... andes_viento_dev.gold |
+| R7 | Quality gate: disponibilidad contractual entre 0 y 1 (1) |
+| R8 | Genie API: Invalid export proto: instructions.example_question_sqls must be sorted by id |
+| R9 | bundle deploy -t prod: An app with the same name already exists |
+| R10 | Calibración con datos reales: la flota era "demasiado sana" |
+| R11 | Genie: INVALID_CERTIFIED_ANSWER_FUNCTION_EXCEPTION ... argument type is not supported: date |
+| R12 | Genie pasa 'NULL' como texto a una función confiable → 0 filas |
+| R13 | El job diario "deshizo" los arreglos: Finanzas pasó de 17/21 a 0/21 |
+| R14 | "Llegaste al 85 % de 500 tablas" con sólo ~180 tablas vivas |
+| R15 | El mes en curso aparecía como un faltante de USD 1,4 M |
+| R16 | Genie prefiere una función certificada aunque no sirva para la pregunta |
+
 ## Lo que trajimos aprendido de NovaMart (y por eso NO pasó)
 
 | error en NovaMart | cómo lo evitamos acá |

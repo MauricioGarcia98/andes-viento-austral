@@ -28,6 +28,8 @@ preguntarle cuando algo no cierra.
 
 ## Cómo se trabajó (etapas)
 
+El detalle de cada etapa (qué se hizo, por qué y cómo se verificó) está en [17 · Cómo se construyó](17_como_se_construyo.md).
+
 1. **Plan** (Product Owner): empresa, áreas, casos, preguntas para Genie.
 2. **Generador** (Data Engineer + Data Scientist): física del viento y el sol, historia guionada, suciedad.
 3. **Medallion** (Data Engineer + Analytics Engineer): bronze → silver → gold → ops, tests.

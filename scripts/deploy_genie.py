@@ -90,7 +90,10 @@ def deploy(target: str, only: list[str] | None, warehouse_name: str, catalog: st
     out = ROOT / "genie" / f"deployed_{target}.json"
     previous = json.loads(out.read_text(encoding="utf-8")) if out.exists() else {}
     deployed = {**previous, **deployed}  # con --only no se pierden los agents que no se tocaron
-    out.write_text(json.dumps(deployed, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    try:
+        out.write_text(json.dumps(deployed, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    except OSError as exc:  # p. ej. desde un notebook en una carpeta de sólo lectura
+        print(f"(no se pudo guardar {out.name}: {exc})")
     return deployed
 
 

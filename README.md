@@ -13,7 +13,7 @@
   <img alt="Genie" src="https://img.shields.io/badge/Genie-4%20agents%20%C2%B7%2086%20benchmarks-30a46c"/>
   <img alt="Spark" src="https://img.shields.io/badge/PySpark-4.0-E25A1C?logo=apachespark&logoColor=white"/>
   <img alt="Delta" src="https://img.shields.io/badge/Delta%20Lake-4.0-00ADD4"/>
-  <img alt="Tests" src="https://img.shields.io/badge/pytest-26%20tests-0A9EDC?logo=pytest&logoColor=white"/>
+  <img alt="Tests" src="https://img.shields.io/badge/pytest-28%20tests-0A9EDC?logo=pytest&logoColor=white"/>
   <img alt="CI" src="https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white"/>
   <img alt="Idioma" src="https://img.shields.io/badge/idioma-espa%C3%B1ol%20rioplatense-75AADB"/>
 </p>
@@ -28,7 +28,7 @@
 - [Qué le pregunta cada área a Genie](#-qué-le-pregunta-cada-área-a-genie)
 - [El proceso completo](#-el-proceso-completo)
 - [Resultados reales del deploy](#-resultados-reales-del-deploy)
-- [Empezá en 5 pasos](#-empezá-en-5-pasos)
+- [Replicarlo desde cero](#-replicarlo-desde-cero)
 - [Estructura del repo](#-estructura-del-repo)
 - [Documentación](#-documentación)
 - [Ruta de aprendizaje](#-ruta-de-aprendizaje)
@@ -117,7 +117,8 @@ Detalle tarea por tarea y los errores que aparecieron: [docs/08_bitacora.md](doc
 
 - **Prod** (`andes_viento`): 12/12 ✅. **Job diario** (día 2026-10-01): ✅ en ~12 min, `generate_data` EXCLUDED por la condición.
 - **Pipeline LDP**: ✅ al primer intento, 3 min 14 s; expectations: 633 potencias y 2.166 temperaturas imposibles detectadas.
-- **15 errores reales** encontrados y arreglados en el camino (R1-R15 en la [bitácora](docs/08_bitacora.md)).
+- **24 errores reales** encontrados y arreglados: 8 en la prueba local (L1-L8) y 16 en Databricks (R1-R16), cada uno
+  con causa, arreglo y lección en la [bitácora](docs/08_bitacora.md).
 
 ### Lo que encuentran los datos (SF 0,1)
 
@@ -153,20 +154,42 @@ qué función certificada va en cada agent: R11-R16).
 Detalle por pregunta: [docs/genie/resultados_benchmarks.md](docs/genie/resultados_benchmarks.md).
 
 
-## 🚀 Empezá en 5 pasos
+## 🚀 Replicarlo desde cero
+
+Hay dos caminos y llegan al mismo lugar. Los dos explican cada paso: qué hace, por qué, cómo verificarlo y qué hacer
+si falla.
+
+| camino | para quién | guía |
+|---|---|---|
+| 🖱️ **Desde la web** | nunca usaste Databricks o no querés instalar nada | [docs/11_guia_desde_la_web.md](docs/11_guia_desde_la_web.md) |
+| ⌨️ **Por terminal** | querés correr los tests locales, desplegar a prod y configurar CI/CD | [docs/10_despliegue_y_cicd.md](docs/10_despliegue_y_cicd.md) |
+
+El resumen por terminal (cada línea está explicada en la guía):
 
 ```bash
-# 0) una sola vez, en el SQL Editor (Free Edition no deja crear catálogos por API)
+# 1) Cuenta gratis: https://www.databricks.com/learn/free-edition  ·  Databricks CLI instalada
+git clone https://github.com/MauricioGarcia98/andes-viento-austral.git && cd andes-viento-austral
+python3 -m venv .venv && source .venv/bin/activate && pip install -e ".[dev,genie]"
+ruff check src tests scripts apps && pytest -q          # tests locales (opcional, ~10 min)
+
+# 2) Conectar la CLI (perfil DEFAULT) y crear el catálogo (una vez, en el SQL Editor):
+databricks auth login --host https://<tu-workspace>
 #    CREATE CATALOG IF NOT EXISTS andes_viento_dev;
-databricks bundle validate -t dev
-databricks bundle deploy   -t dev
-databricks bundle run andes_e2e -t dev                        # ~45 min a SF 0,1
-pip install "databricks-sdk>=0.60" pyyaml
-python scripts/deploy_genie.py --target dev --grant-app andes-genie-chat
-python scripts/genie_ask.py "¿Por qué Cañadón León generó menos en julio 2025?"
+
+# 3) Desplegar y correr (~45 min)
+databricks bundle validate -t dev && databricks bundle deploy -t dev
+databricks bundle run andes_e2e -t dev
+
+# 4) Genie (o, sin terminal, el notebook notebooks/12_deploy_genie)
+python scripts/deploy_genie.py --target dev
+python scripts/genie_ask.py --target dev --agent 01_operacion_parques "¿Por qué Cañadón León generó menos en julio 2025?"
 ```
 
-¿Nunca usaste Databricks? [Guía paso a paso desde la web](docs/11_guia_desde_la_web.md).
+> 📌 Si cambiás código, **volvé a hacer `bundle deploy` antes de correr el job** (el job usa lo desplegado). Y evitá
+> `full_refresh`: en Free Edition las tablas borradas cuentan ~7 días en la cuota de 500.
+
+¿Cómo se construyó, en qué orden y por qué? [docs/17_como_se_construyo.md](docs/17_como_se_construyo.md) ·
+¿Cómo se probó? [docs/18_pruebas.md](docs/18_pruebas.md) · ¿Cómo se opera día a día? [docs/19_operacion_diaria.md](docs/19_operacion_diaria.md)
 
 <details>
 <summary><b>Correr todo en local (sin Databricks)</b></summary>
@@ -175,7 +198,7 @@ python scripts/genie_ask.py "¿Por qué Cañadón León generó menos en julio 2
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"
 ruff check src tests scripts apps
-pytest -m "not integration"      # 25 tests unitarios
+pytest -m "not integration"      # 27 tests unitarios (~2 min)
 pytest -m integration            # pipeline completo landing -> gold + quality gate (5 semanas, SF 0,03)
 python scripts/run_local.py --scale-factor 0.03 --start 2025-06-25 --end 2025-07-31
 ```
@@ -196,7 +219,7 @@ python scripts/run_local.py --scale-factor 0.03 --start 2025-06-25 --end 2025-07
 │   ├── gold/                      # dimensions, facts, marts (runner SQL)
 │   ├── quality/                   # expectations (warn/quarantine/fail) + gate
 │   └── genie/conversation.py      # cliente de la Conversation API
-├── notebooks/                     # 12 notebooks delgados (%run ./_bootstrap + 1 llamada)
+├── notebooks/                     # 13 notebooks delgados (%run ./_bootstrap + 1 llamada) + deploy de Genie
 ├── pipelines/                     # versión declarativa (LDP) en SQL
 ├── sql/marts | governance | semantic
 ├── governance/data_dictionary.yml # fuente única de comments, PK/FK y tags
@@ -207,20 +230,23 @@ python scripts/run_local.py --scale-factor 0.03 --start 2025-06-25 --end 2025-07
 ├── scripts/                       # build_governance, build_dashboards, build_genie, deploy_genie, genie_ask, genie_eval
 ├── tests/                         # pytest + Spark/Delta local
 ├── learning/                      # 21 módulos
-└── docs/                          # 17 documentos + ADRs + diagramas + animaciones
+└── docs/                          # 20 documentos + ADRs + diagramas + animaciones
 ```
 </details>
 
 ## 📚 Documentación
 
-| | | |
+Empezá por [docs/00_empeza_aca.md](docs/00_empeza_aca.md): explica las palabras mínimas y qué leer según lo que quieras hacer.
+
+| entender | hacer | profundizar |
 |---|---|---|
-| [00 · Empezá acá](docs/00_empeza_aca.md) | [06 · Fuentes y suciedad](docs/06_fuentes_y_suciedad.md) | [12 · Genie](docs/12_genie.md) |
-| [01 · La empresa](docs/01_la_empresa.md) | [07 · Modelado dimensional](docs/07_modelado_dimensional.md) | [13 · Cómo hacerlo más real](docs/13_hacerlo_mas_real.md) |
-| [02 · Roles y decisiones](docs/02_roles_y_decisiones.md) | [08 · Bitácora de errores reales](docs/08_bitacora.md) | [14 · FAQ](docs/14_faq.md) |
-| [03 · Casos de negocio](docs/03_casos_de_negocio.md) | [09 · Performance y escala](docs/09_performance_y_escala.md) | [15 · Glosario](docs/15_glosario.md) |
-| [04 · Diccionario de datos](docs/04_diccionario_de_datos.md) | [10 · Despliegue y CI/CD](docs/10_despliegue_y_cicd.md) | [16 · Autoevaluación](docs/16_autoevaluacion.md) |
-| [05 · Arquitectura + ADRs](docs/05_arquitectura.md) | [11 · Guía desde la web](docs/11_guia_desde_la_web.md) | [Agent mode: preguntas de "por qué"](docs/genie/agent_mode.md) |
+| [00 · Empezá acá](docs/00_empeza_aca.md) | [10 · Replicar desde cero (terminal)](docs/10_despliegue_y_cicd.md) | [05 · Arquitectura + ADRs](docs/05_arquitectura.md) |
+| [01 · La empresa](docs/01_la_empresa.md) | [11 · Guía desde la web](docs/11_guia_desde_la_web.md) | [06 · Fuentes y suciedad](docs/06_fuentes_y_suciedad.md) |
+| [02 · Roles y decisiones](docs/02_roles_y_decisiones.md) | [12 · Genie](docs/12_genie.md) | [07 · Modelado dimensional](docs/07_modelado_dimensional.md) |
+| [03 · Casos de negocio](docs/03_casos_de_negocio.md) | [19 · Operación diaria](docs/19_operacion_diaria.md) | [09 · Performance y escala](docs/09_performance_y_escala.md) |
+| [17 · Cómo se construyó](docs/17_como_se_construyo.md) | [Agent mode: preguntas de "por qué"](docs/genie/agent_mode.md) | [04 · Diccionario de datos](docs/04_diccionario_de_datos.md) |
+| [18 · Cómo se probó](docs/18_pruebas.md) | [16 · Autoevaluación](docs/16_autoevaluacion.md) | [08 · Bitácora de errores reales](docs/08_bitacora.md) |
+| [15 · Glosario](docs/15_glosario.md) | [14 · FAQ](docs/14_faq.md) | [13 · Cómo hacerlo más real](docs/13_hacerlo_mas_real.md) |
 
 ## 🎓 Ruta de aprendizaje
 
