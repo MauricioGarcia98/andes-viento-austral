@@ -104,7 +104,44 @@ Todos los diagramas: [docs/diagrams/](docs/diagrams/README.md).
 Corrido en un workspace **Databricks Free Edition**, `scale_factor = 0.1` (37 turbinas, 23 inversores, 2023-01 → 2026-09).
 Detalle tarea por tarea y los errores que aparecieron: [docs/08_bitacora.md](docs/08_bitacora.md).
 
-<!-- RESULTADOS -->
+### Job e2e (dev, carga completa, run #3)
+
+| tarea | estado | seg | | tarea | estado | seg |
+|---|:-:|---:|---|---|:-:|---:|
+| setup | ✅ | 36 | | gold_dimensions | ✅ | 63 |
+| should_generate | ✅ | 1 | | gold_facts | ✅ | 74 |
+| generate_data (11 fuentes) | ✅ | 654 | | gold_marts | ✅ | 57 |
+| bronze_ingest | ✅ | 494 | | governance | ✅ | 207 |
+| silver_reference (8) | ✅ | 822 | | semantic_layer | ✅ | 26 |
+| silver_telemetry (3) | ✅ | 114 | | quality_gate | ✅ | 18 |
+
+- **Prod** (`andes_viento`): 12/12 ✅. **Job diario** (día 2026-10-01): ✅ en ~12 min, `generate_data` EXCLUDED por la condición.
+- **Pipeline LDP**: ✅ al primer intento, 3 min 14 s; expectations: 633 potencias y 2.166 temperaturas imposibles detectadas.
+- **15 errores reales** encontrados y arreglados en el camino (R1-R15 en la [bitácora](docs/08_bitacora.md)).
+
+### Lo que encuentran los datos (SF 0,1)
+
+| pregunta | respuesta |
+|---|---|
+| ¿Por qué Cañadón León generó menos en julio 2025? | **−18,4 %**: curtailment por mantenimiento de la ET (−7,6 %), hielo (−5,0 %), menos viento (−4,0 %) |
+| ¿HTW nos debe plata? | Disponibilidad 2025 **96,7 %** < garantía 97 % → ≈ **USD 659 mil** de *liquidated damages* |
+| ¿Por qué el mantenimiento se multiplicó por 4 en USD? | Lote defectuoso de multiplicadoras: de 1 a 13 fallas mayores (USD 0,72 M → 3,09 M) |
+| ¿Cumplimos con el data center? | 96,6 % en 2025, 3 meses con faltante, ≈ USD 225 mil |
+| ¿Baterías en Santa Cruz? | **Hoy no**: 10.856 MWh recortados valen USD 146 mil a spot (15 USD/MWh con orden); repago ~78 años |
+| ¿Por qué Susques genera menos en septiembre? | Suciedad de 11,1 % por tormentas de polvo |
+| ¿El modelo predictivo anticipa fallas? | 21 de 26 fallas mayores con alerta; 12 con ≥ 7 días |
+
+### Genie Agents (en Databricks → **Genie**)
+
+`Andes · Operación de parques` · `Andes · Mantenimiento predictivo` · `Andes · Comercial PPA` · `Andes · Finanzas y mercado`
+(los de dev llevan el sufijo `[dev]`). Se usan desde la plataforma, sobre las tablas gold, metric views y funciones.
+
+<!-- GENIE_RATE -->
+
+Evolución real de la evaluación (`scripts/genie_eval.py`, mismas 86 preguntas): **0 %** (parámetro `DATE`, R11) →
+**74 %** → **91 %** (arreglos de instrucciones, metric views y funciones) → ver la tabla de arriba.
+Detalle por pregunta: [docs/genie/resultados_benchmarks.md](docs/genie/resultados_benchmarks.md).
+
 
 ## 🚀 Empezá en 5 pasos
 

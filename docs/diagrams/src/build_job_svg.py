@@ -25,14 +25,14 @@ CARD_STROKE = "#30363d"
 
 # (key, título, subtítulo, recurso, columna, fila, ícono, color de capa)
 TASKS = [
-    ("setup", "setup", "Notebook · UC", "capas + volumen", 0, 0, "cfg", None),
-    ("generate", "generate_data", "for_each · 11 fuentes", "landing · SF=0.1", 0, 1, "gen", None),
-    ("bronze", "bronze_ingest", "Auto Loader · drift", "bronze.* (11)", 1, 0.5, "nb", "bronze"),
-    ("silver", "silver", "2 × for_each", "", 2, 0.5, "each", "silver"),
-    ("dims", "gold_dimensions", "SCD2 · point-in-time", "gold.dim_* (7)", 3, 0, "nb", "gold"),
-    ("facts", "gold_facts", "pérdidas por causa", "gold.fact_* (6)", 3, 1, "nb", "gold"),
-    ("marts", "marts + semántica", "SQL · metric views", "9 marts · 7 mv", 4, 0, "sql", "gold"),
-    ("gate", "quality_gate", "10 invariantes", "bloquea si falla", 4, 1, "check", None),
+    ("setup", "setup", "Notebook · UC", "capas · 36 s", 0, 0, "cfg", None),
+    ("generate", "generate_data", "for_each · 11 fuentes", "SF 0.1 · 654 s", 0, 1, "gen", None),
+    ("bronze", "bronze_ingest", "Auto Loader · drift", "bronze (11) · 494 s", 1, 0.5, "nb", "bronze"),
+    ("silver", "silver", "2 × for_each · 936 s", "", 2, 0.5, "each", "silver"),
+    ("dims", "gold_dimensions", "SCD2 · point-in-time", "dim (7) · 63 s", 3, 0, "nb", "gold"),
+    ("facts", "gold_facts", "pérdidas por causa", "fact (6) · 74 s", 3, 1, "nb", "gold"),
+    ("marts", "marts + semántica", "SQL · metric views", "9 marts · 7 mv · 290 s", 4, 0, "sql", "gold"),
+    ("gate", "quality_gate", "10 invariantes", "OK · 18 s", 4, 1, "check", None),
 ]
 LOGS = [
     "andes_viento_dev · 5 capas · volumen raw",
@@ -41,8 +41,8 @@ LOGS = [
     "relojes, husos, kW/MW, clavados · SCD2 activos",
     "dim_turbine: cambios de multiplicadora (SCD2)",
     "potencial = generado + red + fallas + hielo",
-    "LEO jul-2025: -15,4 % vs presupuesto, explicado",
-    "10/10 invariantes OK → Genie listo",
+    "LEO jul-2025: -18,4 % vs presupuesto, explicado",
+    "12/12 tareas SUCCESS · ~43 min · Genie listo",
 ]
 ENTITIES = ["assets", "contracts", "spot", "dispatch", "weather", "scada", "inverter", "orders"]
 EDGES = [  # (desde, hasta) -> se enciende cuando corre "hasta"
