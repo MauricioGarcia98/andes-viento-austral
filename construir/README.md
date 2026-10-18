@@ -104,6 +104,16 @@ git diff etapa-04 etapa-05               # exactamente qué líneas agrega
 git show etapa-05:src/andes_viento/ingestion/bronze.py    # un archivo de esa etapa
 ```
 
+> **Si `git checkout etapa-05` dice `pathspec 'etapa-05' did not match`**, los tags no están en GitHub. Cada commit
+> de la rama `curso` empieza con su etapa (`etapa-05: Bronze con Auto Loader`), así que se pueden recrear en local:
+> ```bash
+> git checkout curso
+> git log --format='%H %s' | grep -E ' etapa-[0-9]{2}:' | while read sha msg; do
+>   git tag -f "${msg%%:*}" "$sha"; done
+> git tag -l 'etapa-*'                     # tienen que aparecer las 19
+> git push origin --tags                   # opcional: subirlos para la próxima vez
+> ```
+
 Y para comparar **tu** versión con la de referencia (desde tu repo):
 ```bash
 git remote add referencia https://github.com/MauricioGarcia98/andes-viento-austral.git
